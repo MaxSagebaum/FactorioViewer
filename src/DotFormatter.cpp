@@ -22,16 +22,20 @@ void DotFormatter::addTreeNode(const ASCIINode &node, const std::string& designa
   }
 }
 
-void DotFormatter::formatTree(const ASCIINode &tree, const std::vector<ASCIINode> &totals) {
+void DotFormatter::formatTree(const std::vector<ASCIINode> &roots, const std::vector<ASCIINode> &totals) {
   std::cout << "digraph buildTree {" << std::endl;
 
-  addTreeNode(tree, "r");
+  for(int i = 0; i < roots.size(); ++i) {
+    addTreeNode(roots[i], format("r_%02d", i));
+  }
 
   for(int i = 0; i < totals.size(); ++i) {
     const std::string &totalDes = format("t_%02d", i);
     addTreeNode(totals[i], totalDes);
 
-    addTotalLinks(tree, totals[i], "r", totalDes);
+    for(int j = 0; j < roots.size(); ++j) {
+      addTotalLinks(roots[j], totals[i], format("r_%02d", j), totalDes);
+    }
   }
 
   std::cout << "}" << std::endl;

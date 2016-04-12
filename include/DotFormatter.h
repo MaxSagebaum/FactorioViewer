@@ -16,7 +16,7 @@ class DotFormatter {
                      const std::string &totalDesignator);
 
 public:
-  void formatTree(const ASCIINode& tree, const std::vector<ASCIINode>& totals);
+  void formatTree(const std::vector<ASCIINode>& roots, const std::vector<ASCIINode>& totals);
 };
 
 
