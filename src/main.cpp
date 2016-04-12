@@ -7,6 +7,7 @@
 #include <ASCIITree.h>
 #include <util.hpp>
 #include <DotFormatter.h>
+#include <Settings.h>
 
 using namespace std;
 
@@ -248,25 +249,25 @@ bool isBaseIngredient(const std::string& name) {
   return name.compare("iron-ore") == 0 || name.compare("copper-ore") == 0;
 }
 
-void formatNode(const Recipe &recipe, double amount, ASCIINode &node) {
-  double fabs = recipe.time * amount / (60.0 * recipe.yield);
+void formatNode(const Recipe &recipe, double amount, ASCIINode &node, const Settings& settings) {
+  double fabs = recipe.time * amount / (60.0 * recipe.yield * settings.speed);
 
   node.addLine(recipe.creates);
   node.addLine(format("%8.3f u/min", amount));
   node.addLine(format("%8.3f fabs", fabs));
 }
 
-ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::string& target, double amount, std::map<std::string,double>& totals) {
+ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::string& target, double amount, std::map<std::string,double>& totals, const Settings& settings) {
   ASCIINode node;
   if(recipes.find(target) != recipes.end()) {
     const Recipe& recipe = recipes.at(target);
 
     totals[target] += amount;
-    formatNode(recipe, amount, node);
+    formatNode(recipe, amount, node, settings);
 
     for(const Part& part : recipe.parts) {
       if(!isBaseIngredient(part.name)) {
-        node.addChild(outputYield(recipes, part.name, amount * part.quantity, totals));
+        node.addChild(outputYield(recipes, part.name, amount * part.quantity, totals, settings));
       }
     }
   } else {
@@ -276,12 +277,12 @@ ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::s
   return node;
 }
 
-std::vector<ASCIINode> outputTotals(std::map<std::string, Recipe>& recipes, const std::map<std::string, double>& totals) {
+std::vector<ASCIINode> outputTotals(std::map<std::string, Recipe>& recipes, const std::map<std::string, double>& totals, const Settings& settings) {
   std::vector<ASCIINode> vector(totals.size());
 
   int pos = 0;
   for ( auto iter = totals.begin(); iter != totals.end(); iter++) {
-    formatNode(recipes[iter->first], iter->second, vector[pos]);
+    formatNode(recipes[iter->first], iter->second, vector[pos], settings);
     pos += 1;
   }
 
@@ -290,41 +291,62 @@ std::vector<ASCIINode> outputTotals(std::map<std::string, Recipe>& recipes, cons
 
 std::vector<std::string> files = {"test/ammo.lua", "test/capsule.lua", "test/demo-furnace-recipe.lua", "test/demo-recipe.lua", "test/demo-turret.lua", "test/equipment.lua", "test/fluid-recipe.lua", "test/furnace-recipe.lua", "test/inserter.lua", "test/module.lua", "test/recipe.lua", "test/turret.lua"};
 
-int main(int nargs, char **args) {
-  lua_State *L = luaL_newstate();
+int main(int nargs, const char **args) {
 
-  lua_createtable(L, 0, 0);
-  lua_setglobal(L,"data");
+  Settings settings;
+  if(settings.parseCommandLine(nargs, args)) {
+    lua_State *L = luaL_newstate();
 
-  // Load file.
-  report_errors(L, luaL_loadfile(L, "lua/extend.lua"));
-  report_errors(L, lua_pcall(L, 0, 0, 0));
-  for(auto file : files) {
-    report_errors(L, luaL_loadfile(L, file.c_str()));
+    lua_createtable(L, 0, 0);
+    lua_setglobal(L,"data");
+
+    // Load file.
+    report_errors(L, luaL_loadfile(L, "lua/extend.lua"));
     report_errors(L, lua_pcall(L, 0, 0, 0));
+    for(auto file : files) {
+      report_errors(L, luaL_loadfile(L, file.c_str()));
+      report_errors(L, lua_pcall(L, 0, 0, 0));
+    }
+
+    std::map<std::string, Recipe> recipes;
+
+    // Print table contents.
+    lua_getglobal(L, "data");
+    readRecipes(recipes, L);
+
+    //std::cout << "Recipes: " << recipes.size() << std::endl;
+
+    std::map<std::string, double> totals;
+
+    std::vector<ASCIINode> nodes;
+    for(int i = 0; i < settings.recipes.size(); ++i) {
+      double units = settings.units.back();
+      if(i < settings.units.size()) {
+        units = settings.units[i];
+      }
+      ASCIINode node = outputYield(recipes, settings.recipes[i], units, totals, settings);
+      nodes.push_back(node);
+    }
+    std::vector<ASCIINode> totalNodes = outputTotals(recipes, totals, settings);
+
+
+    if(settings.dotOutput) {
+      DotFormatter dotFormatter;
+      //dotFormatter.formatTree(nodes, totalNodes);
+    } else {
+      for(int i = 0; i < nodes.size(); ++i) {
+        nodes[i].printTree();
+        std::cout << std::endl;
+      }
+      ASCIINode::printList(totalNodes, 5);
+    };
+
+    fflush(stdout);
+
+    lua_close(L);
+
+    return 0;
+  } else {
+    return -1;
   }
-
-  std::map<std::string, Recipe> recipes;
-
-  // Print table contents.
-  lua_getglobal(L, "data");
-  readRecipes(recipes, L);
-
-  //std::cout << "Recipes: " << recipes.size() << std::endl;
-
-  std::map<std::string, double> totals;
-  ASCIINode node = outputYield(recipes, "fast-splitter", 30.0, totals);
-  //node.printTree();
-  std::vector<ASCIINode> totalNodes = outputTotals(recipes, totals);
-  //std::cout << std::endl;
-  //ASCIINode::printList(totalNodes, 5);
-
-  DotFormatter dotFormatter;
-  dotFormatter.formatTree(node, totalNodes);
-
-  fflush(stdout);
-
-  lua_close(L);
-
-  return 0;
 }
