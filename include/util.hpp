@@ -9,6 +9,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <string>
+#include <sstream>
 
 /**
  * Conversion function which uses a format specifier for the string conversion.
@@ -81,6 +82,35 @@ inline std::string format(const char* format, ...) {
   va_end(list);
 
   return output;
+}
+
+/**
+ * Conversion function which converts the string into the given type.
+ *
+ * @param string        The string representation
+ *
+ * @return  The value from the string representation
+ */
+template<typename TYPE>
+TYPE parseType(const std::string& string) {
+    TYPE value;
+
+    std::stringstream ss(string);
+    ss >> value;
+
+    return value;
+}
+
+/**
+ * Conversion function which converts the string into the given type.
+ *
+ * @param string        The string representation
+ *
+ * @return  The value from the string representation
+ */
+template<>
+inline std::string parseType<std::string>(const std::string& string) {
+    return string;
 }
 
 

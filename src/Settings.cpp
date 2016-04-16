@@ -9,6 +9,41 @@
 
 #include <tclap/CmdLine.h>
 #include <fstream>
+#include <util.hpp>
+
+void Settings::splitList(const std::string& line, std::vector<std::string>& items) {
+  size_t lastDelim = 0;
+  size_t delim;
+  while(std::string::npos != (delim = line.find(':'))) {
+    items.push_back(line.substr(lastDelim, delim));
+
+    lastDelim = delim + 1;
+  }
+
+  if(0 != line.size()) {
+    items.push_back(line.substr(lastDelim));
+  }
+}
+
+template<typename Type>
+void Settings::handleEntry(const std::string& targetName, const std::string& name, const std::string& value, Type& targetValue) {
+  if(0 == targetName.compare(name)) {
+    targetValue = parseType<Type>(value);
+  }
+}
+
+template<typename Type>
+void Settings::handleEntryList(const std::string& targetName, const std::string& name, const std::string& value, std::vector<Type>& targetValues) {
+  if(0 == targetName.compare(name)) {
+    std::vector<std::string> items;
+    splitList(value, items);
+
+    for(auto&& item : items) {
+      targetValues.push_back(parseType<Type>(item));
+
+    }
+  }
+}
 
 void Settings::readIni() {
   std::ifstream in(INI_NAME);
@@ -20,8 +55,30 @@ void Settings::readIni() {
       if(std::string::npos == delim) {
         std::string name = line.substr(0, delim);
         std::string value = line.substr(delim + 1);
+
+        handleEntryList(INI_DIRECTORIES, name, value, this->readDirectories);
       }
     }
+  }
+}
+
+template<typename Type>
+void Settings::outputEntryList(std::ofstream& out, const std::string& name, const std::vector<Type>& values) {
+  out << name << "=";
+  for(int i = 0; i < values.size(); ++i) {
+    if(0 != i) {
+      out << ":";
+    }
+    out << values[i];
+  }
+  out << std::endl;
+}
+
+void Settings::writeIni() {
+  std::ofstream out(INI_NAME);
+  if(!out.bad()) {
+
+    outputEntryList(out, INI_DIRECTORIES, this->readDirectories);
   }
 }
 
@@ -46,6 +103,10 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
 
     cmd.parse( nargs, args);
 
+    if(!iniReadArg.isSet()) {
+      readIni();
+    }
+
     dotOutput = dotOutputArg.isSet();
     recipes = recipesArg.getValue();
     units = unitsArg.getValue();
@@ -69,6 +130,10 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     baseComponents = baseArg.getValue();
     baseComponents.push_back("iron-plate");
     baseComponents.push_back("copper-copper");
+
+    if(!iniWriteArg.isSet()) {
+      writeIni();
+    }
 
   } catch (TCLAP::ArgException &e) {
     std::cerr << "error: " << e.error() << " for argument " << e.argId() << std::endl;
