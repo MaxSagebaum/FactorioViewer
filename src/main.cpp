@@ -8,6 +8,7 @@
 #include <util.hpp>
 #include <DotFormatter.h>
 #include <Settings.h>
+#include <dirent.h>
 
 using namespace std;
 
@@ -245,8 +246,13 @@ void PrintTable(lua_State *L, int deep) {
   }
 }
 
-bool isBaseIngredient(const std::string& name) {
-  return name.compare("iron-ore") == 0 || name.compare("copper-ore") == 0;
+bool isBaseIngredient(const std::string& name, const Settings& settings) {
+  for(auto base : settings.baseComponents) {
+    if(0 == base.compare(name)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void formatNode(const Recipe &recipe, double amount, ASCIINode &node, const Settings& settings) {
@@ -265,8 +271,8 @@ ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::s
     totals[target] += amount;
     formatNode(recipe, amount, node, settings);
 
-    for(const Part& part : recipe.parts) {
-      if(!isBaseIngredient(part.name)) {
+    if(!isBaseIngredient(target, settings)) {
+      for(const Part& part : recipe.parts) {
         node.addChild(outputYield(recipes, part.name, amount * part.quantity, totals, settings));
       }
     }
@@ -289,7 +295,23 @@ std::vector<ASCIINode> outputTotals(std::map<std::string, Recipe>& recipes, cons
   return vector;
 }
 
-std::vector<std::string> files = {"test/ammo.lua", "test/capsule.lua", "test/demo-furnace-recipe.lua", "test/demo-recipe.lua", "test/demo-turret.lua", "test/equipment.lua", "test/fluid-recipe.lua", "test/furnace-recipe.lua", "test/inserter.lua", "test/module.lua", "test/recipe.lua", "test/turret.lua"};
+void listLuaFiles(const std::string& directory, std::vector<std::string>& files) {
+  DIR *dir;
+  struct dirent *ent;
+  if ((dir = opendir (directory.c_str())) != NULL) {
+    /* print all the files and directories within directory */
+    while ((ent = readdir (dir)) != NULL) {
+      std::string fileName = ent->d_name;
+
+      if(std::string::npos != fileName.rfind(".lua")) {
+        files.push_back(directory + "/" + fileName);
+      }
+    }
+    closedir (dir);
+  } else {
+    std::cerr << "Warning: Could not open the directory: '" << directory << "'." << std::endl;
+  }
+}
 
 int main(int nargs, const char **args) {
 
@@ -299,6 +321,11 @@ int main(int nargs, const char **args) {
 
     lua_createtable(L, 0, 0);
     lua_setglobal(L,"data");
+
+    std::vector<std::string> files;
+    for(auto dir : settings.readDirectories) {
+      listLuaFiles(dir, files);
+    }
 
     // Load file.
     report_errors(L, luaL_loadfile(L, "lua/extend.lua"));
