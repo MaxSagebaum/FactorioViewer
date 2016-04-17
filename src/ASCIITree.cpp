@@ -12,12 +12,10 @@ const std::string arrowRight = " ----> ";
 const std::string arrowRightWithChild = " --+-> ";
 const std::string arrowRightEnd = "   +-> ";
 
-const std::string arrowLeft = " <---- ";
-const std::string arrowLeftWithChild = " <-+-- ";
-const std::string arrowLefttEnd = " <-+-- ";
+const std::string arrowLeft = " <-+   ";
 
-const std::string line = " ----- ";
-const std::string lineWithChild = " --+-- ";
+const std::string line = " ------";
+const std::string lineWithChild = " --+---";
 
 
 RenderData::RenderData(const size_t items, const size_t childrenSize) :
@@ -101,39 +99,65 @@ void printLine(std::vector<RenderData>& nodeStack, size_t linesPerItem) {
   for(size_t i = 0; i < nodeStack.size(); ++i) {
     RenderData& data = nodeStack[i];
 
+    bool isFirst = false;
     if(data.itemsPlotted < data.items) {
+      if(data.itemsPlotted == 0) {
+        isFirst = true;
+      }
 
       addToLines(linesPerItem, lines, filler, &data.lines[data.itemsPlotted * linesPerItem], data.maxSize);
 
-      if(data.childrenSize == 1) {
-        addTree(linesPerItem, lines, filler, 0, empty, arrowRight, empty);
-      } else if(data.childrenSize > 1) {
-        addTree(linesPerItem, lines, filler, 0, empty, arrowRightWithChild, bar);
-        outputFiller = true;
+      if(data.items > 1) { // add extra arrows to the left and spacing
+        const std::string* fromTop = &bar;     // Default:  |
+        const std::string* arrow = &arrowLeft; //          <+
+        const std::string* below = &empty;       //
+        if(data.itemsPlotted == 0) {   // first has no bar from top and only a line with child
+          fromTop = &empty;
+          arrow = &lineWithChild;
+        }
+        if(data.itemsPlotted + 1 != data.items) { // last hast no bar below
+          below = &bar;
+          outputFiller = true;
+        }
+
+        addTree(linesPerItem, lines, filler, 0, *fromTop, *arrow, *below);
       }
 
       data.itemsPlotted += 1;
     } else {
       addToLines(linesPerItem, lines, filler, "", data.maxSize);
+      if(data.items > 1) {
+        addTree(linesPerItem, lines, filler, 0, empty);  // all results are plotted so only empty space needed
+      }
+    }
 
-      if(data.childrenSize > 0) {
+    if(data.childPosition < data.childrenSize) {
+      // a straight line is the default
+      const std::string* fromTop = &bar;
+      const std::string* arrow = &bar;
+      const std::string* below = &bar;
 
-        if(nodeStack[i + 1].itemsPlotted >= nodeStack[i + 1].items) { // currently not plotting one of the own children
-          if(data.childPosition + 1 < data.childrenSize) {
-            addTree(linesPerItem, lines, filler, 0, bar);
-            outputFiller = true;
-          } else {
-            addTree(linesPerItem, lines, filler, 0, empty);
-          }
+      if(isFirst) {
+        fromTop = &empty;
+        if(data.childrenSize == 1) {
+          arrow = &arrowRight;
+          below = &empty;
         } else {
+          arrow = &arrowRightWithChild;
+          outputFiller = true;
+        }
+      } else {
+        if(0 == nodeStack[i + 1].itemsPlotted) { // one of my children starts plotting
+          arrow = &arrowRightEnd;
           if(data.childPosition + 1 == data.childrenSize) {
-            addTree(linesPerItem, lines, filler, 0, bar, arrowRightEnd, empty);
+             below = &empty;
           } else {
-            addTree(linesPerItem, lines, filler, 0, bar, arrowRightEnd, bar);
             outputFiller = true;
           }
         }
       }
+
+      addTree(linesPerItem, lines, filler, 0, *fromTop, *arrow, *below);
     }
   }
 
@@ -166,6 +190,10 @@ void addAndPrint(ProductionNode& node, std::vector<RenderData>& nodeStack) {
       nodeStack.push_back(renderNode(node.children[i]));
       addAndPrint(node.children[i], nodeStack);
 
+      // print the remaining lines
+      while(nodeStack.back().itemsPlotted < nodeStack.back().items) {
+        printLine(nodeStack, 3);
+      }
       nodeStack.pop_back();
 
       nodeStack.back().childPosition += 1;
@@ -178,6 +206,10 @@ void ProductionNode::printTree() {
 
   nodeStack.push_back(renderNode(*this));
   addAndPrint(*this, nodeStack);
+  // print the remaining lines
+  while(nodeStack.back().itemsPlotted < nodeStack.back().items) {
+    printLine(nodeStack, 3);
+  }
 }
 
 void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t maxSize) {
@@ -190,22 +222,25 @@ void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t 
   size_t pos = 0;
   for (auto &&node : nodes) {
     RenderData data = renderNode(node);
-    if(0 != pos) {
-      addTree(n, lines, filler, 0, empty);
-    }
 
-    addToLines(n, lines, filler, &data.lines[0], data.maxSize);
-
-    pos += 1;
-    if(pos >= maxSize) {
-      if(!firstOut) {
-        std::cout << std::endl;
-      } else {
-        firstOut = false;
+    for(int item = 0; item < data.items; ++item) {
+      if(0 != pos) {
+        addTree(n, lines, filler, 0, empty);
       }
-      outputLines(lines, n);
-      clearLines(lines, n);
-      pos = 0;
+
+      addToLines(n, lines, filler, &data.lines[item * 3], data.maxSize);
+
+      pos += 1;
+      if(pos >= maxSize) {
+        if(!firstOut) {
+          std::cout << std::endl;
+        } else {
+          firstOut = false;
+        }
+        outputLines(lines, n);
+        clearLines(lines, n);
+        pos = 0;
+      }
     }
   }
 

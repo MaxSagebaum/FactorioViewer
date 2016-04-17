@@ -111,7 +111,6 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
 
     dotOutput = dotOutputArg.isSet();
     totalAll = totalAllArg.isSet();
-    totalComponents = totalArg.getValue();
     recipes = recipesArg.getValue();
     units = unitsArg.getValue();
     if(0 == units.size()) {
@@ -132,9 +131,29 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     }
 
     baseComponents = baseArg.getValue();
+
+    totalComponents = totalArg.getValue();
+    // add all base components that the use defines to the total components
+    for(auto&& base : baseComponents) {
+      totalComponents.push_back(base);
+    }
+
+    // add default base components
+    baseComponents.push_back("crude-oil");
+    baseComponents.push_back("iron-ore");
+    baseComponents.push_back("copper-ore");
     baseComponents.push_back("iron-plate");
     baseComponents.push_back("copper-plate");
+    baseComponents.push_back("heavy-oil");
+    baseComponents.push_back("light-oil");
+    baseComponents.push_back("petroleum-gas");
 
+    // add default total components
+    totalComponents.push_back("iron-plate");
+    totalComponents.push_back("copper-plate");
+    totalComponents.push_back("heavy-oil");
+    totalComponents.push_back("light-oil");
+    totalComponents.push_back("petroleum-gas");
     if(!iniWriteArg.isSet()) {
       writeIni();
     }

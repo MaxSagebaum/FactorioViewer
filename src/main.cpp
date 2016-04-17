@@ -37,6 +37,15 @@ struct Recipe {
       parts(),
       time(0.5),
       yield(1) {}
+
+  void finish() {
+    if(0 == this->results.size()) {
+      Part part;
+      part.name = this->creates;
+      part.quantity = this->yield;
+      this->results.push_back(part);
+    }
+  }
 };
 
 void report_errors(lua_State *L, int status) {
@@ -189,6 +198,8 @@ void readRecipe(Recipe& recipe, lua_State *L) {
 
     lua_pop(L, 1);
   }
+
+  recipe.finish();
 }
 
 void readRecipes(std::map<std::string, Recipe>& recipes, lua_State *L) {
@@ -264,30 +275,38 @@ bool isTotalIngredient(const std::string& name, const Settings& settings) {
   return false;
 }
 
-void addItem(const Recipe &recipe, double amount, ProductionNode &node, const Settings& settings) {
-  double fabs = recipe.time * amount / (60.0 * recipe.yield * settings.speed);
+void addItem(const Recipe &recipe, double amount, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings) {
 
-  node.addItem(ItemData(recipe.creates, amount, fabs));
+  for(size_t i = 0; i < recipe.results.size(); ++i) {
+    double fabs = recipe.time * amount / (60.0 * recipe.results[i].quantity * settings.speed);
+    double units = recipe.results[i].quantity * amount;
+    node.addItem(ItemData(recipe.results[i].name, units, fabs));
+
+    if(settings.totalAll ||
+       isTotalIngredient(recipe.results[i].name, settings)) {
+      totals[recipe.results[i].name] += amount;
+    }
+  }
 }
 
-ProductionNode outputYield(const std::map<std::string, Recipe>& recipes, const std::string& target, double amount, std::map<std::string,double>& totals, const Settings& settings) {
+ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amount, std::map<std::string,double>& totals, const Settings& settings) {
   ProductionNode node;
-  if(recipes.find(target) != recipes.end()) {
-    const Recipe& recipe = recipes.at(target);
 
-    bool isBase = isBaseIngredient(target, settings);
-    if(settings.totalAll || isBase || isTotalIngredient(target, settings)) {
-      totals[target] += amount;
-    }
-    addItem(recipe, amount, node, settings);
+  addItem(recipe, amount, node, totals, settings);
 
-    if(!isBase) {
-      for(const Part& part : recipe.parts) {
-        node.addChild(outputYield(recipes, part.name, amount * part.quantity, totals, settings));
+  for(const Part& part : recipe.parts) {
+    if(!isBaseIngredient(part.name, settings)) {
+      if(targetToRecipe.find(part.name) != targetToRecipe.end()) {
+        node.addChild(
+          outputYield(targetToRecipe, *targetToRecipe.at(part.name), amount * part.quantity, totals, settings));
+      } else {
+        std::cerr << "Could not find recipe for : " << part.name << std::endl;
       }
+    } else {
+      ProductionNode child;
+      child.addItem(ItemData(part.name, amount * part.quantity, 0));
+      node.addChild(child);
     }
-  } else {
-    std::cerr << "Could not find recipe: " << target << std::endl;
   }
 
   return node;
@@ -295,10 +314,11 @@ ProductionNode outputYield(const std::map<std::string, Recipe>& recipes, const s
 
 std::vector<ProductionNode> outputTotals(std::map<std::string, Recipe>& recipes, const std::map<std::string, double>& totals, const Settings& settings) {
   std::vector<ProductionNode> vector(totals.size());
+  std::map<std::string,double> temp;
 
   int pos = 0;
   for ( auto iter = totals.begin(); iter != totals.end(); iter++) {
-    addItem(recipes[iter->first], iter->second, vector[pos], settings);
+    addItem(recipes[iter->first], iter->second, vector[pos], temp, settings);
     pos += 1;
   }
 
@@ -320,6 +340,16 @@ void listLuaFiles(const std::string& directory, std::vector<std::string>& files)
     closedir (dir);
   } else {
     std::cerr << "Warning: Could not open the directory: '" << directory << "'." << std::endl;
+  }
+}
+
+void buildTargetToRecipeLookup(const std::map<std::string, Recipe>& recipes, std::map<std::string, const Recipe*>& targetToRecipe) {
+  for(auto&& recipeEntry : recipes) {
+    const Recipe& recipe = recipeEntry.second;
+
+    for(size_t i = 0; i < recipe.results.size(); ++i) {
+      targetToRecipe[recipe.results[i].name] = &recipe;
+    }
   }
 }
 
@@ -351,6 +381,9 @@ int main(int nargs, const char **args) {
     lua_getglobal(L, "data");
     readRecipes(recipes, L);
 
+    std::map<std::string, const Recipe*> targetToRecipe;
+    buildTargetToRecipeLookup(recipes, targetToRecipe);
+
     //std::cout << "Recipes: " << recipes.size() << std::endl;
 
     std::map<std::string, double> totals;
@@ -361,8 +394,10 @@ int main(int nargs, const char **args) {
       if(i < settings.units.size()) {
         units = settings.units[i];
       }
-      ProductionNode node = outputYield(recipes, settings.recipes[i], units, totals, settings);
-      nodes.push_back(node);
+      if(recipes.find(settings.recipes[i]) != recipes.end()) {
+        ProductionNode node = outputYield(targetToRecipe, recipes[settings.recipes[i]], units, totals, settings);
+        nodes.push_back(node);
+      }
     }
     std::vector<ProductionNode> totalNodes = outputTotals(recipes, totals, settings);
 
