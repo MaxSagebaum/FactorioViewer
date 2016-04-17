@@ -47,6 +47,14 @@ void DotFormatter::formatTree(const std::vector<ASCIINode> &roots, const std::ve
     }
   }
 
+  std::cout << "{rank=same;";
+  for(int i = 0; i < totals.size(); ++i) {
+    const std::string &totalDes = format("t_%02d", i);
+
+    std::cout << " " << totalDes;
+  }
+  std::cout << "}\n";
+
   std::cout << "}" << std::endl;
 }
 
