@@ -3,99 +3,133 @@
 //
 
 #include <iostream>
+#include <util.hpp>
 #include "../include/ASCIITree.h"
 
 const std::string empty = "       ";
 const std::string bar = "   |   ";
-const std::string arrowStart = " ----> ";
-const std::string arrowStartWithChild = " --+-> ";
-const std::string arrowEnd = "   +-> ";
+const std::string arrowRight = " ----> ";
+const std::string arrowRightWithChild = " --+-> ";
+const std::string arrowRightEnd = "   +-> ";
+
+const std::string arrowLeft = " <---- ";
+const std::string arrowLeftWithChild = " <-+-- ";
+const std::string arrowLefttEnd = " <-+-- ";
+
+const std::string line = " ----- ";
+const std::string lineWithChild = " --+-- ";
+
+
+RenderData::RenderData(const size_t items, const size_t childrenSize) :
+  lines(),
+  items(items),
+  maxSize(0),
+
+  itemsPlotted(0),
+  childPosition(0),
+  childrenSize(childrenSize)
+{ }
+
+void RenderData::addLine(const std::string& line) {
+  lines.push_back(line);
+  if(maxSize < line.size()) {
+    maxSize = line.size();
+  }
+}
 
 ASCIINode::ASCIINode() :
-  lines(),
-  maxSize(0),
-  children(),
-  pos(0)
+  items(),
+  children()
 { }
 
 void ASCIINode::addChild(const ASCIINode &node) {
   this->children.push_back(node);
 }
 
-void ASCIINode::addLine(const std::string &line) {
-  if(this->maxSize < line.size()) {
-    this->maxSize = line.size();
-  }
-
-  this->lines.push_back(line);
+void ASCIINode::addItem(const ItemData &item) {
+  this->items.push_back(item);
 }
 
-std::string addToLine(const std::string& text, int maxSize) {
+std::string addToLine(const std::string& text, size_t maxSize) {
   std::string result;
   result += text;
-  for(int i = text.size(); i < maxSize; ++i) {
+  for(size_t i = text.size(); i < maxSize; ++i) {
     result += " ";
   }
 
   return result;
 }
 
-void printLine(std::vector<ASCIINode*>& nodeStack, std::vector<int>& childPosition, std::vector<bool>& plotted) {
-  std::string lines[3];
+void addToLines(const size_t n, std::string* lines, std::string& filler, const std::string* items, const size_t maxSize) {
+  for(size_t i = 0; i < n; ++i) {
+    lines[i] += addToLine(items[i], maxSize);
+  }
+  filler += addToLine("", maxSize);
+}
+
+void addToLines(const size_t n, std::string* lines, std::string& filler, const std::string& item, const size_t maxSize) {
+  for(size_t i = 0; i < n; ++i) {
+    lines[i] += addToLine(item, maxSize);
+  }
+  filler += addToLine("", maxSize);
+}
+
+void addTree(const size_t n, std::string* lines, std::string& filler, const size_t pos, const std::string& append) {
+  if(pos < n) {
+    for(size_t i = pos; i < n; ++i) {
+      lines[i] += append;
+    }
+  }
+
+  filler += append;
+}
+
+template<typename ... Args>
+void addTree(const size_t n, std::string* lines, std::string& filler, const size_t pos, const std::string& append,  const Args& ... args) {
+  if(pos < n) {
+    lines[pos] += append;
+    addTree(n, lines, filler, pos + 1, args...);
+  } else if(pos == n) {
+    filler += append;
+  }
+}
+
+void printLine(std::vector<RenderData>& nodeStack, size_t linesPerItem) {
+  std::string* lines = new std::string[linesPerItem];
   std::string filler;
   bool outputFiller = false;
-  for(int i = 0; i < nodeStack.size(); ++i) {
-    ASCIINode& node = *nodeStack[i];
-    int childPos = childPosition[i];
+  for(size_t i = 0; i < nodeStack.size(); ++i) {
+    RenderData& data = nodeStack[i];
 
-    if(!plotted[i]) {
-      plotted[i] = true;
+    if(data.itemsPlotted < data.items) {
 
-      lines[0] += addToLine(node.lines[0], node.maxSize);
-      lines[1] += addToLine(node.lines[1], node.maxSize);
-      lines[2] += addToLine(node.lines[2], node.maxSize);
-      filler += addToLine("", node.maxSize);
+      addToLines(linesPerItem, lines, filler, &data.lines[data.itemsPlotted * linesPerItem], data.maxSize);
 
-
-      if(node.children.size() == 1) {
-        lines[0] += empty;
-        lines[1] += arrowStart;
-        lines[2] += empty;
-        filler += empty;
-      } else if(node.children.size() > 1) {
-        lines[0] += empty;
-        lines[1] += arrowStartWithChild;
-        lines[2] += bar;
-        filler += bar;
+      if(data.childrenSize == 1) {
+        addTree(linesPerItem, lines, filler, 0, empty, arrowRight, empty);
+      } else if(data.childrenSize > 1) {
+        addTree(linesPerItem, lines, filler, 0, empty, arrowRightWithChild, bar);
         outputFiller = true;
       }
+
+      data.itemsPlotted += 1;
     } else {
-      for(int i = 0; i < 3; ++i) {
-        lines[i] += addToLine("", node.maxSize);
-      }
-      filler += addToLine("", node.maxSize);
+      addToLines(linesPerItem, lines, filler, "", data.maxSize);
 
-      if(node.children.size() > 0) {
+      if(data.childrenSize > 0) {
 
-        if(plotted[i + 1]) {
-          if (childPos + 1 < node.children.size()) {
-            ASCIINode::appendLines(lines, 3, bar);
-            filler += bar;
+        if(nodeStack[i + 1].itemsPlotted >= nodeStack[i + 1].items) { // currently not plotting one of the own children
+          if(data.childPosition + 1 < data.childrenSize) {
+            addTree(linesPerItem, lines, filler, 0, bar);
             outputFiller = true;
           } else {
-            ASCIINode::appendLines(lines, 3, empty);
-            filler += empty;
+            addTree(linesPerItem, lines, filler, 0, empty);
           }
         } else {
-          lines[0] += bar;
-          lines[1] += arrowEnd;
-
-          if(childPos + 1 == node.children.size()) {
-            lines[2] += empty;
-            filler += empty;
+          if(data.childPosition + 1 == data.childrenSize) {
+            addTree(linesPerItem, lines, filler, 0, bar, arrowRightEnd, empty);
           } else {
-            lines[2] += bar;
-            filler += bar;
+            addTree(linesPerItem, lines, filler, 0, bar, arrowRightEnd, bar);
             outputFiller = true;
           }
         }
@@ -107,55 +141,60 @@ void printLine(std::vector<ASCIINode*>& nodeStack, std::vector<int>& childPositi
   if(outputFiller) {
     std::cout << filler << std::endl;
   }
+
+  delete [] lines;
 }
 
-void addAndPrint(std::vector<ASCIINode*>& nodeStack, std::vector<int>& childPos, std::vector<bool>& plotted) {
-  ASCIINode& node = *nodeStack.back();
+RenderData renderNode(const ASCIINode& node) {
+  RenderData data(node.items.size(), node.children.size());
+  for(size_t i = 0; i < node.items.size(); ++i) {
+    const ItemData& item = node.items[i];
 
+    data.addLine(item.name);
+    data.addLine(format("%8.3f u/min", item.units));
+    data.addLine(format("%8.3f fabs", item.fabs));
+  }
+
+  return data;
+}
+
+void addAndPrint(ASCIINode& node, std::vector<RenderData>& nodeStack) {
   if(node.children.size() == 0) {
-    printLine(nodeStack, childPos, plotted);
+    printLine(nodeStack, 3);
   } else {
-    for (int i = 0; i < node.children.size(); ++i) {
-      nodeStack.push_back(&node.children[i]);
-      childPos.push_back(0);
-      plotted.push_back(false);
-      addAndPrint(nodeStack, childPos, plotted);
+    for (size_t i = 0; i < node.children.size(); ++i) {
+      nodeStack.push_back(renderNode(node.children[i]));
+      addAndPrint(node.children[i], nodeStack);
 
-      plotted.pop_back();
-      childPos.pop_back();
       nodeStack.pop_back();
 
-      childPos.back() += 1;
+      nodeStack.back().childPosition += 1;
     }
   }
 }
 
 void ASCIINode::printTree() {
-  std::vector<ASCIINode*> nodeStack;
-  std::vector<int> childPosition;
-  std::vector<bool> plotted;
+  std::vector<RenderData> nodeStack;
 
-  nodeStack.push_back(this);
-  childPosition.push_back(0);
-  plotted.push_back(false);
-  addAndPrint(nodeStack, childPosition, plotted);
+  nodeStack.push_back(renderNode(*this));
+  addAndPrint(*this, nodeStack);
 }
 
-void ASCIINode::printList(const std::vector<ASCIINode> &nodes, int maxSize) {
+void ASCIINode::printList(const std::vector<ASCIINode> &nodes, size_t maxSize) {
 
-  const int n = 3;
+  const size_t n = 3;
   std::string lines[n];
+  std::string filler;
 
   bool firstOut = true;
-  int pos = 0;
+  size_t pos = 0;
   for (auto &&node : nodes) {
+    RenderData data = renderNode(node);
     if(0 != pos) {
-      appendLines(lines, n, empty);
+      addTree(n, lines, filler, 0, empty);
     }
 
-    for(int i = 0; i < n; ++i) {
-      lines[i] += addToLine(node.lines[i], node.maxSize);
-    }
+    addToLines(n, lines, filler, &data.lines[0], data.maxSize);
 
     pos += 1;
     if(pos >= maxSize) {
@@ -178,20 +217,14 @@ void ASCIINode::printList(const std::vector<ASCIINode> &nodes, int maxSize) {
   }
 }
 
-void ASCIINode::clearLines(std::string *lines, const int n) {
-  for(int i = 0; i < n; ++i) {
+void ASCIINode::clearLines(std::string *lines, const size_t n) {
+  for(size_t i = 0; i < n; ++i) {
         lines[i].clear();
       }
 }
 
-void ASCIINode::appendLines(std::string *lines, int n, const std::string text) {
-  for(int i = 0; i < n; ++i) {
-        lines[i] += text;
-      }
-}
-
-void ASCIINode::outputLines(const std::string *lines, int n) {
-  for (int i = 0; i < n; ++i) {
+void ASCIINode::outputLines(const std::string *lines, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
     std::cout << lines[i] << std::endl;
   }
 }

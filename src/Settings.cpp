@@ -65,7 +65,7 @@ void Settings::readIni() {
 template<typename Type>
 void Settings::outputEntryList(std::ofstream& out, const std::string& name, const std::vector<Type>& values) {
   out << name << "=";
-  for(int i = 0; i < values.size(); ++i) {
+  for(size_t i = 0; i < values.size(); ++i) {
     if(0 != i) {
       out << ":";
     }

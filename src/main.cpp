@@ -264,12 +264,10 @@ bool isTotalIngredient(const std::string& name, const Settings& settings) {
   return false;
 }
 
-void formatNode(const Recipe &recipe, double amount, ASCIINode &node, const Settings& settings) {
+void addItem(const Recipe &recipe, double amount, ASCIINode &node, const Settings& settings) {
   double fabs = recipe.time * amount / (60.0 * recipe.yield * settings.speed);
 
-  node.addLine(recipe.creates);
-  node.addLine(format("%8.3f u/min", amount));
-  node.addLine(format("%8.3f fabs", fabs));
+  node.addItem(ItemData(recipe.creates, amount, fabs));
 }
 
 ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::string& target, double amount, std::map<std::string,double>& totals, const Settings& settings) {
@@ -281,7 +279,7 @@ ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::s
     if(settings.totalAll || isBase || isTotalIngredient(target, settings)) {
       totals[target] += amount;
     }
-    formatNode(recipe, amount, node, settings);
+    addItem(recipe, amount, node, settings);
 
     if(!isBase) {
       for(const Part& part : recipe.parts) {
@@ -300,7 +298,7 @@ std::vector<ASCIINode> outputTotals(std::map<std::string, Recipe>& recipes, cons
 
   int pos = 0;
   for ( auto iter = totals.begin(); iter != totals.end(); iter++) {
-    formatNode(recipes[iter->first], iter->second, vector[pos], settings);
+    addItem(recipes[iter->first], iter->second, vector[pos], settings);
     pos += 1;
   }
 
@@ -358,7 +356,7 @@ int main(int nargs, const char **args) {
     std::map<std::string, double> totals;
 
     std::vector<ASCIINode> nodes;
-    for(int i = 0; i < settings.recipes.size(); ++i) {
+    for(size_t i = 0; i < settings.recipes.size(); ++i) {
       double units = settings.units.back();
       if(i < settings.units.size()) {
         units = settings.units[i];
@@ -373,7 +371,7 @@ int main(int nargs, const char **args) {
       DotFormatter dotFormatter;
       dotFormatter.formatTree(nodes, totalNodes);
     } else {
-      for(int i = 0; i < nodes.size(); ++i) {
+      for(size_t i = 0; i < nodes.size(); ++i) {
         nodes[i].printTree();
         std::cout << std::endl;
       }

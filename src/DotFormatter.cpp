@@ -19,10 +19,16 @@ void DotFormatter::addTreeNode(const ASCIINode &node, const std::string& designa
   // |         | fabs required    |
   // +----------------------------+
   std::cout << designation << "[shape=record, color=" << color << ", label=\"";
-  std::cout << "{" << node.lines[0] << "| { Picture | {" << node.lines[1] << " | " << node.lines[2] << "}}}";
-  std::cout << "\"];\n";
+  std::cout << "{";
+  for(size_t i = 0; i < node.items.size(); ++i) {
+    if(0 != i) {
+      std::cout << " | ";
+    }
+    std::cout << node.items[i].name << "| { Picture | {" << node.items[i].units << " | " << node.items[i].fabs << "}}";
+  }
+  std::cout << "}\"];\n";
 
-  for(int i = 0; i < node.children.size(); ++i) {
+  for(size_t i = 0; i < node.children.size(); ++i) {
 
     const std::string &childDes = format("%s_%02d", designation.c_str(), i);
     addTreeNode(node.children[i], childDes, color);
@@ -34,21 +40,21 @@ void DotFormatter::addTreeNode(const ASCIINode &node, const std::string& designa
 void DotFormatter::formatTree(const std::vector<ASCIINode> &roots, const std::vector<ASCIINode> &totals) {
   std::cout << "digraph buildTree {" << std::endl;
 
-  for(int i = 0; i < roots.size(); ++i) {
+  for(size_t i = 0; i < roots.size(); ++i) {
     addTreeNode(roots[i], format("r_%02d", i), COLOR_REGULAR);
   }
 
-  for(int i = 0; i < totals.size(); ++i) {
+  for(size_t i = 0; i < totals.size(); ++i) {
     const std::string &totalDes = format("t_%02d", i);
     addTreeNode(totals[i], totalDes, COLOR_TOTAL);
 
-    for(int j = 0; j < roots.size(); ++j) {
+    for(size_t j = 0; j < roots.size(); ++j) {
       addTotalLinks(roots[j], totals[i], format("r_%02d", j), totalDes);
     }
   }
 
   std::cout << "{rank=same;";
-  for(int i = 0; i < totals.size(); ++i) {
+  for(size_t i = 0; i < totals.size(); ++i) {
     const std::string &totalDes = format("t_%02d", i);
 
     std::cout << " " << totalDes;
@@ -61,11 +67,13 @@ void DotFormatter::formatTree(const std::vector<ASCIINode> &roots, const std::ve
 void DotFormatter::addTotalLinks(const ASCIINode &node, const ASCIINode &totalNode, const std::string &designator,
                                  const std::string &totalDesignator) {
 
-  if(0 == node.lines[0].compare(totalNode.lines[0])) {
-    std::cout << designator << " -> " << totalDesignator << ";\n";
+  for(size_t i = 0; i < node.items.size(); ++i) {
+    if(0 == node.items[i].name.compare(totalNode.items[0].name)) {
+      std::cout << designator << " -> " << totalDesignator << ";\n";
+    }
   }
 
-  for(int i = 0; i < node.children.size(); ++i) {
+  for(size_t i = 0; i < node.children.size(); ++i) {
 
     const std::string &childDes = format("%s_%02d", designator.c_str(), i);
     addTotalLinks(node.children[i], totalNode, childDes, totalDesignator);
