@@ -37,16 +37,16 @@ void RenderData::addLine(const std::string& line) {
   }
 }
 
-ASCIINode::ASCIINode() :
+ProductionNode::ProductionNode() :
   items(),
   children()
 { }
 
-void ASCIINode::addChild(const ASCIINode &node) {
+void ProductionNode::addChild(const ProductionNode &node) {
   this->children.push_back(node);
 }
 
-void ASCIINode::addItem(const ItemData &item) {
+void ProductionNode::addItem(const ItemData &item) {
   this->items.push_back(item);
 }
 
@@ -137,7 +137,7 @@ void printLine(std::vector<RenderData>& nodeStack, size_t linesPerItem) {
     }
   }
 
-  ASCIINode::outputLines(lines, 3);
+  ProductionNode::outputLines(lines, 3);
   if(outputFiller) {
     std::cout << filler << std::endl;
   }
@@ -145,7 +145,7 @@ void printLine(std::vector<RenderData>& nodeStack, size_t linesPerItem) {
   delete [] lines;
 }
 
-RenderData renderNode(const ASCIINode& node) {
+RenderData renderNode(const ProductionNode& node) {
   RenderData data(node.items.size(), node.children.size());
   for(size_t i = 0; i < node.items.size(); ++i) {
     const ItemData& item = node.items[i];
@@ -158,7 +158,7 @@ RenderData renderNode(const ASCIINode& node) {
   return data;
 }
 
-void addAndPrint(ASCIINode& node, std::vector<RenderData>& nodeStack) {
+void addAndPrint(ProductionNode& node, std::vector<RenderData>& nodeStack) {
   if(node.children.size() == 0) {
     printLine(nodeStack, 3);
   } else {
@@ -173,14 +173,14 @@ void addAndPrint(ASCIINode& node, std::vector<RenderData>& nodeStack) {
   }
 }
 
-void ASCIINode::printTree() {
+void ProductionNode::printTree() {
   std::vector<RenderData> nodeStack;
 
   nodeStack.push_back(renderNode(*this));
   addAndPrint(*this, nodeStack);
 }
 
-void ASCIINode::printList(const std::vector<ASCIINode> &nodes, size_t maxSize) {
+void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t maxSize) {
 
   const size_t n = 3;
   std::string lines[n];
@@ -217,13 +217,13 @@ void ASCIINode::printList(const std::vector<ASCIINode> &nodes, size_t maxSize) {
   }
 }
 
-void ASCIINode::clearLines(std::string *lines, const size_t n) {
+void ProductionNode::clearLines(std::string *lines, const size_t n) {
   for(size_t i = 0; i < n; ++i) {
         lines[i].clear();
       }
 }
 
-void ASCIINode::outputLines(const std::string *lines, size_t n) {
+void ProductionNode::outputLines(const std::string *lines, size_t n) {
   for (size_t i = 0; i < n; ++i) {
     std::cout << lines[i] << std::endl;
   }

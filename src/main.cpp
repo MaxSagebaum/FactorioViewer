@@ -264,14 +264,14 @@ bool isTotalIngredient(const std::string& name, const Settings& settings) {
   return false;
 }
 
-void addItem(const Recipe &recipe, double amount, ASCIINode &node, const Settings& settings) {
+void addItem(const Recipe &recipe, double amount, ProductionNode &node, const Settings& settings) {
   double fabs = recipe.time * amount / (60.0 * recipe.yield * settings.speed);
 
   node.addItem(ItemData(recipe.creates, amount, fabs));
 }
 
-ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::string& target, double amount, std::map<std::string,double>& totals, const Settings& settings) {
-  ASCIINode node;
+ProductionNode outputYield(const std::map<std::string, Recipe>& recipes, const std::string& target, double amount, std::map<std::string,double>& totals, const Settings& settings) {
+  ProductionNode node;
   if(recipes.find(target) != recipes.end()) {
     const Recipe& recipe = recipes.at(target);
 
@@ -293,8 +293,8 @@ ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::s
   return node;
 }
 
-std::vector<ASCIINode> outputTotals(std::map<std::string, Recipe>& recipes, const std::map<std::string, double>& totals, const Settings& settings) {
-  std::vector<ASCIINode> vector(totals.size());
+std::vector<ProductionNode> outputTotals(std::map<std::string, Recipe>& recipes, const std::map<std::string, double>& totals, const Settings& settings) {
+  std::vector<ProductionNode> vector(totals.size());
 
   int pos = 0;
   for ( auto iter = totals.begin(); iter != totals.end(); iter++) {
@@ -355,16 +355,16 @@ int main(int nargs, const char **args) {
 
     std::map<std::string, double> totals;
 
-    std::vector<ASCIINode> nodes;
+    std::vector<ProductionNode> nodes;
     for(size_t i = 0; i < settings.recipes.size(); ++i) {
       double units = settings.units.back();
       if(i < settings.units.size()) {
         units = settings.units[i];
       }
-      ASCIINode node = outputYield(recipes, settings.recipes[i], units, totals, settings);
+      ProductionNode node = outputYield(recipes, settings.recipes[i], units, totals, settings);
       nodes.push_back(node);
     }
-    std::vector<ASCIINode> totalNodes = outputTotals(recipes, totals, settings);
+    std::vector<ProductionNode> totalNodes = outputTotals(recipes, totals, settings);
 
 
     if(settings.dotOutput) {
@@ -375,7 +375,7 @@ int main(int nargs, const char **args) {
         nodes[i].printTree();
         std::cout << std::endl;
       }
-      ASCIINode::printList(totalNodes, 5);
+      ProductionNode::printList(totalNodes, 5);
     };
 
     fflush(stdout);

@@ -22,20 +22,20 @@ struct ItemData {
   {}
 };
 
-struct ASCIINode {
+struct ProductionNode {
   std::vector<ItemData> items;
-  std::vector<ASCIINode> children;
+  std::vector<ProductionNode> children;
 
 
-  ASCIINode();
+  ProductionNode();
 
   void addItem(const ItemData& item);
 
-  void addChild(const ASCIINode& node);
+  void addChild(const ProductionNode& node);
 
   void printTree();
 
-  static void printList(const std::vector<ASCIINode>& nodes, size_t maxSize = 5);
+  static void printList(const std::vector<ProductionNode>& nodes, size_t maxSize = 5);
 
   static void outputLines(const std::string *lines, size_t n);
 

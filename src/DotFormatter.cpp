@@ -9,7 +9,7 @@
 const std::string COLOR_REGULAR="black";
 const std::string COLOR_TOTAL="blue";
 
-void DotFormatter::addTreeNode(const ASCIINode &node, const std::string& designation, const std::string& color) {
+void DotFormatter::addTreeNode(const ProductionNode &node, const std::string& designation, const std::string& color) {
   // output format:
   // +----------------------------+
   // | description                |
@@ -37,7 +37,7 @@ void DotFormatter::addTreeNode(const ASCIINode &node, const std::string& designa
   }
 }
 
-void DotFormatter::formatTree(const std::vector<ASCIINode> &roots, const std::vector<ASCIINode> &totals) {
+void DotFormatter::formatTree(const std::vector<ProductionNode> &roots, const std::vector<ProductionNode> &totals) {
   std::cout << "digraph buildTree {" << std::endl;
 
   for(size_t i = 0; i < roots.size(); ++i) {
@@ -64,7 +64,7 @@ void DotFormatter::formatTree(const std::vector<ASCIINode> &roots, const std::ve
   std::cout << "}" << std::endl;
 }
 
-void DotFormatter::addTotalLinks(const ASCIINode &node, const ASCIINode &totalNode, const std::string &designator,
+void DotFormatter::addTotalLinks(const ProductionNode &node, const ProductionNode &totalNode, const std::string &designator,
                                  const std::string &totalDesignator) {
 
   for(size_t i = 0; i < node.items.size(); ++i) {
