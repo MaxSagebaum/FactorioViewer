@@ -255,6 +255,15 @@ bool isBaseIngredient(const std::string& name, const Settings& settings) {
   return false;
 }
 
+bool isTotalIngredient(const std::string& name, const Settings& settings) {
+  for(auto total : settings.totalComponents) {
+    if(0 == total.compare(name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void formatNode(const Recipe &recipe, double amount, ASCIINode &node, const Settings& settings) {
   double fabs = recipe.time * amount / (60.0 * recipe.yield * settings.speed);
 
@@ -269,7 +278,7 @@ ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::s
     const Recipe& recipe = recipes.at(target);
 
     bool isBase = isBaseIngredient(target, settings);
-    if(settings.totalAll || isBase) {
+    if(settings.totalAll || isBase || isTotalIngredient(target, settings)) {
       totals[target] += amount;
     }
     formatNode(recipe, amount, node, settings);

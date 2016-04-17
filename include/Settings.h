@@ -15,6 +15,7 @@ struct Settings {
   const std::string INI_NAME = "factorioViewer.ini";
 
   std::vector<std::string> baseComponents;
+  std::vector<std::string> totalComponents;
   std::vector<std::string> readDirectories;
   std::vector<std::string> recipes;
   std::vector<double> units;
