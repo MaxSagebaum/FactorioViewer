@@ -268,10 +268,13 @@ ASCIINode outputYield(const std::map<std::string, Recipe>& recipes, const std::s
   if(recipes.find(target) != recipes.end()) {
     const Recipe& recipe = recipes.at(target);
 
-    totals[target] += amount;
+    bool isBase = isBaseIngredient(target, settings);
+    if(settings.totalAll || isBase) {
+      totals[target] += amount;
+    }
     formatNode(recipe, amount, node, settings);
 
-    if(!isBaseIngredient(target, settings)) {
+    if(!isBase) {
       for(const Part& part : recipe.parts) {
         node.addChild(outputYield(recipes, part.name, amount * part.quantity, totals, settings));
       }

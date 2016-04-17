@@ -100,6 +100,7 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     TCLAP::MultiArg<std::string> baseArg("b", "base", "Treat the item as a base item and stop the breakdown at this item.", false, "base", cmd);
     TCLAP::SwitchArg iniReadArg("", "no-ini-read", "Do not read the ini file.", cmd, false);
     TCLAP::SwitchArg iniWriteArg("", "no-ini-write", "Do not write the ini file.", cmd, false);
+    TCLAP::SwitchArg totalAllArg("a", "all", "Show a total for all items. [Default: Total is only shown for the base items.].", cmd, false);
 
     cmd.parse( nargs, args);
 
@@ -108,6 +109,7 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     }
 
     dotOutput = dotOutputArg.isSet();
+    totalAll = totalAllArg.isSet();
     recipes = recipesArg.getValue();
     units = unitsArg.getValue();
     if(0 == units.size()) {
@@ -129,7 +131,7 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
 
     baseComponents = baseArg.getValue();
     baseComponents.push_back("iron-plate");
-    baseComponents.push_back("copper-copper");
+    baseComponents.push_back("copper-plate");
 
     if(!iniWriteArg.isSet()) {
       writeIni();

@@ -20,6 +20,7 @@ struct Settings {
   std::vector<double> units;
   double speed;
   bool dotOutput;
+  bool totalAll;
 
   bool parseCommandLine(int nargs, const char** args);
 
