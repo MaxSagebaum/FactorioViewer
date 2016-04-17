@@ -10,7 +10,7 @@
 
 class DotFormatter {
 
-  void addTreeNode(const ASCIINode &node, const std::string &designation);
+  void addTreeNode(const ASCIINode &node, const std::string &designation, const std::string& color);
 
   void addTotalLinks(const ASCIINode &tree, const ASCIINode &totalNode, const std::string &designator,
                      const std::string &totalDesignator);
