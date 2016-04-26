@@ -289,6 +289,17 @@ void addItem(const Recipe &recipe, double amount, ProductionNode &node, std::map
   }
 }
 
+void addItem(const std::string &name, double amount, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings) {
+  double units = amount;
+  node.addItem(ItemData(name, units, -1.0));
+
+  if(settings.totalAll ||
+     isTotalIngredient(name, settings)) {
+    totals[name] += amount;
+  }
+
+}
+
 ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amount, std::map<std::string,double>& totals, const Settings& settings) {
   ProductionNode node;
 
@@ -306,20 +317,26 @@ ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToR
         node.addChild(child);
       }
     } else {
-      std::cerr << "Could not find recipe for : " << part.name << std::endl;
+      ProductionNode child;
+      addItem(part.name, amount * part.quantity, child, totals, settings);
+      node.addChild(child);
     }
   }
 
   return node;
 }
 
-std::vector<ProductionNode> outputTotals(std::map<std::string, Recipe>& recipes, const std::map<std::string, double>& totals, const Settings& settings) {
+std::vector<ProductionNode> outputTotals(const std::map<std::string, const Recipe*>& targetToRecipe, const std::map<std::string, double>& totals, const Settings& settings) {
   std::vector<ProductionNode> vector(totals.size());
   std::map<std::string,double> temp;
 
   int pos = 0;
   for ( auto iter = totals.begin(); iter != totals.end(); iter++) {
-    addItem(recipes[iter->first], iter->second, vector[pos], temp, settings);
+    if(targetToRecipe.find(iter->first) != targetToRecipe.end()) {
+      addItem(*targetToRecipe.at(iter->first), iter->second, vector[pos], temp, settings);
+    } else {
+      addItem(iter->first, iter->second, vector[pos], temp, settings);
+    }
     pos += 1;
   }
 
@@ -413,7 +430,7 @@ int main(int nargs, const char **args) {
           std::cerr << "Could not find a recipe for: " << settings.recipes[i] << std::endl;
         }
       }
-      std::vector<ProductionNode> totalNodes = outputTotals(recipes, totals, settings);
+      std::vector<ProductionNode> totalNodes = outputTotals(targetToRecipe, totals, settings);
 
 
       if (settings.dotOutput) {

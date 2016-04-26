@@ -151,6 +151,8 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     baseComponents.push_back("heavy-oil");
     baseComponents.push_back("light-oil");
     baseComponents.push_back("petroleum-gas");
+    baseComponents.push_back("water");
+    baseComponents.push_back("coal");
 
     // add default total components
     totalComponents.push_back("iron-plate");
@@ -158,6 +160,8 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     totalComponents.push_back("heavy-oil");
     totalComponents.push_back("light-oil");
     totalComponents.push_back("petroleum-gas");
+    totalComponents.push_back("water");
+    totalComponents.push_back("coal");
     if(!iniWriteArg.isSet()) {
       writeIni();
     }

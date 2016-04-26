@@ -185,7 +185,11 @@ RenderData renderNode(const ProductionNode& node) {
 
     data.addLine(item.name);
     data.addLine(format("%8.3f u/min", item.units));
-    data.addLine(format("%8.3f fabs", item.fabs));
+    if(-1.0 == item.fabs) {
+      data.addLine("");
+    } else {
+      data.addLine(format("%8.3f fabs", item.fabs));
+    }
   }
 
   return data;
