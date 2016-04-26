@@ -154,6 +154,15 @@ void printLine(std::vector<RenderData>& nodeStack, size_t linesPerItem) {
           } else {
             outputFiller = true;
           }
+        } else {
+          if(data.childPosition + 1 == data.childrenSize) {
+            // no children left
+            fromTop = &empty;
+            arrow = &empty;
+            below = &empty;
+          } else {
+            outputFiller = true;
+          }
         }
       }
 
