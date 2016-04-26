@@ -6,7 +6,7 @@
 #define FACTORIOVIEWER_DOTFORMATTER_H
 
 
-#include "ASCIITree.h"
+#include "ProductionNode.h"
 
 class DotFormatter {
 

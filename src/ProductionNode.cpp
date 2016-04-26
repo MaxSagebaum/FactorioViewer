@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <util.hpp>
-#include "../include/ASCIITree.h"
+#include "ProductionNode.h"
 
 const std::string empty = "       ";
 const std::string bar = "   |   ";
@@ -223,7 +223,7 @@ void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t 
   for (auto &&node : nodes) {
     RenderData data = renderNode(node);
 
-    for(int item = 0; item < data.items; ++item) {
+    for(size_t item = 0; item < data.items; ++item) {
       if(0 != pos) {
         addTree(n, lines, filler, 0, empty);
       }

@@ -4,7 +4,7 @@
 #include<lua.hpp>
 #include <vector>
 #include <map>
-#include <ASCIITree.h>
+#include <ProductionNode.h>
 #include <util.hpp>
 #include <DotFormatter.h>
 #include <Settings.h>

@@ -2,8 +2,8 @@
 // Created by Niemand on 4/10/16.
 //
 
-#ifndef FACTORIOVIEWER_ASCIITREE_H
-#define FACTORIOVIEWER_ASCIITREE_H
+#ifndef PRODUCTION_NODE_H
+#define PRODUCTION_NODE_H
 
 #include <vector>
 #include <string>
