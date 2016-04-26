@@ -295,17 +295,18 @@ ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToR
   addItem(recipe, amount, node, totals, settings);
 
   for(const Part& part : recipe.parts) {
-    if(!isBaseIngredient(part.name, settings)) {
-      if(targetToRecipe.find(part.name) != targetToRecipe.end()) {
+
+    if(targetToRecipe.find(part.name) != targetToRecipe.end()) {
+      if(!isBaseIngredient(part.name, settings)) {
         node.addChild(
-          outputYield(targetToRecipe, *targetToRecipe.at(part.name), amount * part.quantity, totals, settings));
+            outputYield(targetToRecipe, *targetToRecipe.at(part.name), amount * part.quantity, totals, settings));
       } else {
-        std::cerr << "Could not find recipe for : " << part.name << std::endl;
+        ProductionNode child;
+        addItem(*targetToRecipe.at(part.name), amount * part.quantity, child, totals, settings);
+        node.addChild(child);
       }
     } else {
-      ProductionNode child;
-      child.addItem(ItemData(part.name, amount * part.quantity, 0));
-      node.addChild(child);
+      std::cerr << "Could not find recipe for : " << part.name << std::endl;
     }
   }
 
