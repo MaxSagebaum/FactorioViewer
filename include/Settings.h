@@ -22,6 +22,7 @@ struct Settings {
   double speed;
   bool dotOutput;
   bool totalAll;
+  bool list;
 
   bool parseCommandLine(int nargs, const char** args);
 

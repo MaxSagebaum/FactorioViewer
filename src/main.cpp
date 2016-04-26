@@ -380,42 +380,52 @@ int main(int nargs, const char **args) {
     // Print table contents.
     lua_getglobal(L, "data");
     readRecipes(recipes, L);
+    lua_close(L);
 
-    std::map<std::string, const Recipe*> targetToRecipe;
-    buildTargetToRecipeLookup(recipes, targetToRecipe);
 
-    //std::cout << "Recipes: " << recipes.size() << std::endl;
-
-    std::map<std::string, double> totals;
-
-    std::vector<ProductionNode> nodes;
-    for(size_t i = 0; i < settings.recipes.size(); ++i) {
-      double units = settings.units.back();
-      if(i < settings.units.size()) {
-        units = settings.units[i];
+    // base setup finished
+    if(settings.list) {
+      // print all recipes
+      for(auto&& item : recipes) {
+        std::cout << item.second.name << std::endl;
       }
-      if(recipes.find(settings.recipes[i]) != recipes.end()) {
-        ProductionNode node = outputYield(targetToRecipe, recipes[settings.recipes[i]], units, totals, settings);
-        nodes.push_back(node);
+    } else {
+      // print the output for all give recipes
+
+      std::map<std::string, const Recipe *> targetToRecipe;
+      buildTargetToRecipeLookup(recipes, targetToRecipe);
+
+      //std::cout << "Recipes: " << recipes.size() << std::endl;
+
+      std::map<std::string, double> totals;
+
+      std::vector<ProductionNode> nodes;
+      for (size_t i = 0; i < settings.recipes.size(); ++i) {
+        double units = settings.units.back();
+        if (i < settings.units.size()) {
+          units = settings.units[i];
+        }
+        if (recipes.find(settings.recipes[i]) != recipes.end()) {
+          ProductionNode node = outputYield(targetToRecipe, recipes[settings.recipes[i]], units, totals, settings);
+          nodes.push_back(node);
+        } else {
+          std::cerr << "Could not find a recipe for: " << settings.recipes[i] << std::endl;
+        }
+      }
+      std::vector<ProductionNode> totalNodes = outputTotals(recipes, totals, settings);
+
+
+      if (settings.dotOutput) {
+        DotFormatter dotFormatter;
+        dotFormatter.formatTree(nodes, totalNodes);
+      } else {
+        for (size_t i = 0; i < nodes.size(); ++i) {
+          nodes[i].printTree();
+          std::cout << std::endl;
+        }
+        ProductionNode::printList(totalNodes, 5);
       }
     }
-    std::vector<ProductionNode> totalNodes = outputTotals(recipes, totals, settings);
-
-
-    if(settings.dotOutput) {
-      DotFormatter dotFormatter;
-      dotFormatter.formatTree(nodes, totalNodes);
-    } else {
-      for(size_t i = 0; i < nodes.size(); ++i) {
-        nodes[i].printTree();
-        std::cout << std::endl;
-      }
-      ProductionNode::printList(totalNodes, 5);
-    };
-
-    fflush(stdout);
-
-    lua_close(L);
 
     return 0;
   } else {
