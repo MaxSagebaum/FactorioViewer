@@ -14,12 +14,24 @@ struct ItemData {
   double fabs;
   std::string picture;
 
+  ItemData():
+    name(""),
+    units(0),
+    fabs(0),
+    picture("")
+  {}
+
   ItemData(const std::string& name, double units, double fabs):
     name(name),
     units(units),
     fabs(fabs),
     picture("")
   {}
+
+  void add(const ItemData& other) {
+    this->units += other.units;
+    this->fabs += other.fabs;
+  }
 };
 
 struct ProductionNode {

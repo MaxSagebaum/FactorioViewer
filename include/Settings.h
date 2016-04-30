@@ -21,6 +21,7 @@ struct Settings {
   std::vector<double> units;
   double speed;
   bool dotOutput;
+  bool unifyDot;
   bool totalAll;
   bool list;
 

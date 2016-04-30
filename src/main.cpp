@@ -435,7 +435,7 @@ int main(int nargs, const char **args) {
 
       if (settings.dotOutput) {
         DotFormatter dotFormatter;
-        dotFormatter.formatTree(nodes, totalNodes);
+        dotFormatter.formatTree(nodes, totalNodes, settings);
       } else {
         for (size_t i = 0; i < nodes.size(); ++i) {
           nodes[i].printTree();
