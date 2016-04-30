@@ -47,9 +47,13 @@ The same graph can also be generated in the dot format and then rendered with gr
 The path for the factorio recipes can be set with the '--dir' option. The default path is the steam linux directory.
 Afterwards the path is stored in an ini files and does not need to be given each time.
 
-In order to compile the library you need to call:
+In order to compile the library you need to call (and install tclap as an dependency):
 
 ~~~
+mkdir libs
+wget https://sourceforge.net/projects/tclap/files/tclap-1.2.1.tar.gz/download -O tclap-1.2.1.tar.gz
+tar xfz tclap-1.2.1.tar.gz
+cd ..
 mkdir build
 cd build
 cmake ../
