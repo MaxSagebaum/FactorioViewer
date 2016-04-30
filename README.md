@@ -38,6 +38,15 @@ copper-plate         iron-plate
   10.500 fabs           9.333 fabs
 ~~~
 
+The same graph can also be generated in the dot format and then rendered with graphviz:
+~~~
+ ./build/FactorioViewer fast-inserter -u 20 -d > fast-inserter.dot
+ dot -Tpng fast-inserter.dot > fast-inserter.png
+~~~
+
+The path for the factorio recipes can be set with the '--dir' option. The default path is the steam linux directory.
+Afterwards the path is stored in an ini files and does not need to be given each time.
+
 In order to compile the library you need to call:
 
 ~~~
@@ -48,6 +57,11 @@ make
 ~~~
 
 The program reads the recipe files from factorio and needs therefore an installed lua library.
+
+For a more detailed help see
+~~~
+ ./build/FactorioViewer --help
+~~~
 
 This is only a first and rough solution of my idea for a tool that can be used easily to get an overview of the required
 amount of resources for x items per minute. After I finish my thesis, the code will be cleaned up, refactored and document.
