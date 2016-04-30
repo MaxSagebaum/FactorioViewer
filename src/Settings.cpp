@@ -153,6 +153,7 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     baseComponents.push_back("petroleum-gas");
     baseComponents.push_back("water");
     baseComponents.push_back("coal");
+    baseComponents.push_back("alien-artifact");
 
     // add default total components
     totalComponents.push_back("iron-plate");
@@ -162,6 +163,7 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     totalComponents.push_back("petroleum-gas");
     totalComponents.push_back("water");
     totalComponents.push_back("coal");
+    totalComponents.push_back("alien-artifact");
     if(!iniWriteArg.isSet()) {
       writeIni();
     }

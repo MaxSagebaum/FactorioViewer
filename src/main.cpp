@@ -77,14 +77,14 @@ std::string getString(lua_State *L, int stackItem) {
   return stream.str();
 }
 
-int getInteger(lua_State *L, int stackItem) {
-  int value;
+double getDouble(lua_State* L, int stackItem) {
+  double value;
   lua_pushvalue(L, stackItem);
 
   if (lua_isnumber(L, -1)) {
-    value = (int)lua_tonumber(L, -1);
+    value = (double)lua_tonumber(L, -1);
   } else if(lua_isinteger(L, -1)) {
-    value = lua_tointeger(L, -1);
+    value = (double)lua_tointeger(L, -1);
   } else {
     std::cerr << "Expecting double or integer" << std::endl;
     std::cerr << lua_typename(L, lua_type(L, -1)) << std::endl;
@@ -112,7 +112,7 @@ void readPart(Part& part, lua_State *L) {
       if (0 == pos) {
         part.name = getString(L, -1);
       } else if ( 1 == pos) {
-        part.quantity = (double) getInteger(L, -1);
+        part.quantity = getDouble(L, -1);
       } else {
         std::cerr << "Position to large: " << pos << std::endl;
         exit(-1);
@@ -125,7 +125,7 @@ void readPart(Part& part, lua_State *L) {
       if (0 == key.compare("name")) {
         part.name = getString(L, -1);
       } else if (0 == key.compare("amount")) {
-        part.quantity = (double) getInteger(L, -1);
+        part.quantity = getDouble(L, -1);
       } else if (0 == key.compare("type")) {
         part.type = getString(L, -1);
       } else {
@@ -184,9 +184,9 @@ void readRecipe(Recipe& recipe, lua_State *L) {
     } else if(0 == key.compare("result") || 0 == key.compare("main_product")) {
       recipe.creates = getString(L, -1);
     } else if(0 == key.compare("energy_required")) {
-      recipe.time = (double)getInteger(L, -1);
+      recipe.time = getDouble(L, -1);
     } else if(0 == key.compare("result_count")) {
-      recipe.yield = (double)getInteger(L, -1);
+      recipe.yield = getDouble(L, -1);
     } else if(0 == key.compare("ingredients")) {
       readParts(recipe.parts, L);
     } else if(0 == key.compare("results")) {
