@@ -12,6 +12,10 @@
 
 using namespace std;
 
+const char* luaFile =
+#include "../lua/extend.lua"
+;
+
 struct Part {
   std::string name;
   double quantity;
@@ -386,7 +390,7 @@ int main(int nargs, const char **args) {
     }
 
     // Load file.
-    report_errors(L, luaL_loadfile(L, "lua/extend.lua"));
+    report_errors(L, luaL_loadstring(L, luaFile));
     report_errors(L, lua_pcall(L, 0, 0, 0));
     for(auto file : files) {
       report_errors(L, luaL_loadfile(L, file.c_str()));
