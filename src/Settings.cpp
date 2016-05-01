@@ -14,7 +14,7 @@
 void Settings::splitList(const std::string& line, std::vector<std::string>& items) {
   size_t lastDelim = 0;
   size_t delim;
-  while(std::string::npos != (delim = line.find(':'))) {
+  while (std::string::npos != (delim = line.find(';', lastDelim))) {
     items.push_back(line.substr(lastDelim, delim));
 
     lastDelim = delim + 1;
@@ -52,7 +52,7 @@ void Settings::readIni() {
     while(getline(in, line)) {
       size_t delim = line.find('=');
 
-      if(std::string::npos == delim) {
+      if(std::string::npos != delim) {
         std::string name = line.substr(0, delim);
         std::string value = line.substr(delim + 1);
 
@@ -67,7 +67,7 @@ void Settings::outputEntryList(std::ofstream& out, const std::string& name, cons
   out << name << "=";
   for(size_t i = 0; i < values.size(); ++i) {
     if(0 != i) {
-      out << ":";
+      out << ";";
     }
     out << values[i];
   }
@@ -124,12 +124,33 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     }
     speed = speedArg.getValue();
 
-    readDirectories = dirArg.getValue();
+    std::vector<std::string> addionalDirs = dirArg.getValue();
+    for (auto&& item : addionalDirs) {
+      readDirectories.push_back(item);
+    }
     if(0 == readDirectories.size()) {
-      const char *homeDir;
-      if ((homeDir = getenv("HOME")) == NULL) {
-        std::cerr << "Could not get the home directory." << std::endl;
+      const char *homeDirC;
+	    std::string homeDir = "";
+
+#ifdef _WINDOWS
+      if ((homeDirC = getenv("HOMEDRIVE")) == NULL) {
+        std::cerr << "Could not get the home drive." << std::endl;
+        exit(-1);
       }
+      homeDir = homeDirC;
+      if ((homeDirC = getenv("HOMEPATH")) == NULL) {
+        std::cerr << "Could not get the home path." << std::endl;
+        exit(-1);
+      }
+      homeDir += homeDirC;
+#else
+      if ((homeDirC = getenv("HOME")) == NULL) {
+        std::cerr << "Could not get the home directory." << std::endl;
+        exit(-1);
+	    } else {
+          homeDir = homeDirC;
+	    }
+#endif
 
       std::string factorioDir = homeDir;
       factorioDir += "/.local/share/Steam/steamapps/common/Factorio/data/base/prototypes/recipe";
