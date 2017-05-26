@@ -13,5 +13,5 @@ add_executable(FactorioViewer ${SOURCE_FILES})
 
 IF (LUA_FOUND)
     include_directories(${LUA_INCLUDE_DIR})
-    target_link_libraries(FactorioViewer ${LUA_LIBRARIES})
+    target_link_libraries(FactorioViewer ${LUA_LIBRARY})
 endif()

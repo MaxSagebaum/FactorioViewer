@@ -133,8 +133,7 @@ void readPart(Part& part, lua_State *L) {
       } else if (0 == key.compare("type")) {
         part.type = getString(L, -1);
       } else {
-        std::cerr << "Unknown key: " << key << " " << value << std::endl;
-        exit(-1);
+        std::cerr << "Unknown key: " << key << " " << value << " (Ignoring)" << std::endl;
       }
     } else {
       std::cerr << "Expecting string or integer as key" << std::endl;
@@ -181,7 +180,7 @@ void readRecipe(Recipe& recipe, lua_State *L) {
     }
     std::string key = getString(L, -2);
 
-    if(0 == key.compare("enabled") || 0 == key.compare("type") || 0 == key.compare("category") || 0 == key.compare("hidden") || 0 == key.compare("order") || 0 == key.compare("icon")|| 0 == key.compare("subgroup")) {
+    if(0 == key.compare("enabled") || 0 == key.compare("type") || 0 == key.compare("category") || 0 == key.compare("hidden") || 0 == key.compare("order") || 0 == key.compare("icon")|| 0 == key.compare("subgroup") || 0 == key.compare("requester_paste_multiplier")) {
       // ignore
     } else if(0 == key.compare("name")) {
       recipe.name = getString(L, -1);
@@ -196,8 +195,7 @@ void readRecipe(Recipe& recipe, lua_State *L) {
     } else if(0 == key.compare("results")) {
       readParts(recipe.results, L);
     } else {
-      std::cerr << "Unknown key: " <<  key << std::endl;
-      exit(-1);
+      std::cerr << "Unknown key: " <<  key << " (Ignoring)" << std::endl;
     }
 
     lua_pop(L, 1);
