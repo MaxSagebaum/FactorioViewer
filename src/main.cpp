@@ -165,7 +165,7 @@ void readParts(std::vector<Part>& parts, lua_State *L) {
   }
 }
 
-void readRecipe(Recipe& recipe, lua_State *L) {
+void readRecipe(Recipe& recipe, lua_State *L, const Settings& settings) {
   if (0 == lua_istable(L, -1)) {
     std::cerr << "Expecting table as value" << std::endl;
     exit(-1);
@@ -194,6 +194,14 @@ void readRecipe(Recipe& recipe, lua_State *L) {
       readParts(recipe.parts, L);
     } else if(0 == key.compare("results")) {
       readParts(recipe.results, L);
+    } else if(0 == key.compare("normal")) {
+      if(!settings.useExpensive) {
+        readRecipe(recipe, L, settings);
+      }
+    } else if(0 == key.compare("expensive")) {
+      if(settings.useExpensive) {
+        readRecipe(recipe, L, settings);
+      }
     } else {
       std::cerr << "Unknown key: " <<  key << " (Ignoring)" << std::endl;
     }
@@ -204,7 +212,7 @@ void readRecipe(Recipe& recipe, lua_State *L) {
   recipe.finish();
 }
 
-void readRecipes(std::map<std::string, Recipe>& recipes, lua_State *L) {
+void readRecipes(std::map<std::string, Recipe>& recipes, lua_State *L, const Settings& settings) {
   if (0 == lua_istable(L, -1)) {
     std::cerr << "Expecting table as value" << std::endl;
     exit(-1);
@@ -222,7 +230,7 @@ void readRecipes(std::map<std::string, Recipe>& recipes, lua_State *L) {
     }
 
     Recipe recipe;
-    readRecipe(recipe, L);
+    readRecipe(recipe, L, settings);
     recipes[recipe.name] = recipe;
 
     lua_pop(L, 1);
@@ -311,8 +319,7 @@ ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToR
 
     if(targetToRecipe.find(part.name) != targetToRecipe.end()) {
       if(!isBaseIngredient(part.name, settings)) {
-        node.addChild(
-            outputYield(targetToRecipe, *targetToRecipe.at(part.name), amount * part.quantity, totals, settings));
+        node.addChild(outputYield(targetToRecipe, *targetToRecipe.at(part.name), amount * part.quantity, totals, settings));
       } else {
         ProductionNode child;
         addItem(*targetToRecipe.at(part.name), amount * part.quantity, child, totals, settings);
@@ -399,7 +406,7 @@ int main(int nargs, const char **args) {
 
     // Print table contents.
     lua_getglobal(L, "data");
-    readRecipes(recipes, L);
+    readRecipes(recipes, L, settings);
     lua_close(L);
 
 

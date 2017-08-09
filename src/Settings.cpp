@@ -103,6 +103,7 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     TCLAP::SwitchArg iniReadArg("", "no-ini-read", "Do not read the ini file.", cmd, false);
     TCLAP::SwitchArg iniWriteArg("", "no-ini-write", "Do not write the ini file.", cmd, false);
     TCLAP::SwitchArg totalAllArg("a", "all", "Show a total for all items. [Default: Total is only shown for the base items.].", cmd, false);
+    TCLAP::SwitchArg useExpensiveArg("e", "expensive", "Use the expensive version of the required items.", cmd, false);
 
     TCLAP::SwitchArg listArg("l", "list", "List all recipes that are available.", false);
 
@@ -116,6 +117,7 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     dotOutput = dotOutputArg.isSet();
     unifyDot = dotGatherArg.isSet();
     totalAll = totalAllArg.isSet();
+    useExpensive = useExpensiveArg.isSet();
     list = listArg.isSet();
     recipes = recipesArg.getValue();
     units = unitsArg.getValue();

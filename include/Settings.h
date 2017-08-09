@@ -23,6 +23,7 @@ struct Settings {
   bool dotOutput;
   bool unifyDot;
   bool totalAll;
+  bool useExpensive;
   bool list;
 
   bool parseCommandLine(int nargs, const char** args);
