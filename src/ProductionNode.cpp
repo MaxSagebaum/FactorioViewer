@@ -190,6 +190,7 @@ RenderData renderNode(const ProductionNode& node) {
     } else {
       data.addLine(format("%8.3f fabs", item.fabs));
     }
+    data.addLine(format("%8.3f belts", item.units / (60.0 * 13.33)));
   }
 
   return data;
@@ -197,7 +198,7 @@ RenderData renderNode(const ProductionNode& node) {
 
 void addAndPrint(ProductionNode& node, std::vector<RenderData>& nodeStack) {
   if(node.children.size() == 0) {
-    printLine(nodeStack, 3);
+    printLine(nodeStack, 4);
   } else {
     for (size_t i = 0; i < node.children.size(); ++i) {
       nodeStack.push_back(renderNode(node.children[i]));
@@ -205,7 +206,7 @@ void addAndPrint(ProductionNode& node, std::vector<RenderData>& nodeStack) {
 
       // print the remaining lines
       while(nodeStack.back().itemsPlotted < nodeStack.back().items) {
-        printLine(nodeStack, 3);
+        printLine(nodeStack, 4);
       }
       nodeStack.pop_back();
 
@@ -221,13 +222,13 @@ void ProductionNode::printTree() {
   addAndPrint(*this, nodeStack);
   // print the remaining lines
   while(nodeStack.back().itemsPlotted < nodeStack.back().items) {
-    printLine(nodeStack, 3);
+    printLine(nodeStack, 4);
   }
 }
 
 void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t maxSize) {
 
-  const size_t n = 3;
+  const size_t n = 4;
   std::string lines[n];
   std::string filler;
 
@@ -241,7 +242,7 @@ void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t 
         addTree(n, lines, filler, 0, empty);
       }
 
-      addToLines(n, lines, filler, &data.lines[item * 3], data.maxSize);
+      addToLines(n, lines, filler, &data.lines[item * 4], data.maxSize);
 
       pos += 1;
       if(pos >= maxSize) {
