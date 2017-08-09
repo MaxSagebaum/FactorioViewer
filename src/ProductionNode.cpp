@@ -170,7 +170,7 @@ void printLine(std::vector<RenderData>& nodeStack, size_t linesPerItem) {
     }
   }
 
-  ProductionNode::outputLines(lines, 3);
+  ProductionNode::outputLines(lines, linesPerItem);
   if(outputFiller) {
     std::cout << filler << std::endl;
   }
