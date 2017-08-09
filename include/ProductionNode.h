@@ -67,6 +67,7 @@ struct RenderData {
   RenderData(const size_t items, const size_t childrenSize);
 
   void addLine(const std::string &line);
+  size_t getLinesPerItem();
 };
 
 

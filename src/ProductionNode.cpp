@@ -35,6 +35,10 @@ void RenderData::addLine(const std::string& line) {
   }
 }
 
+size_t RenderData::getLinesPerItem() {
+  return lines.size() / items;
+}
+
 ProductionNode::ProductionNode() :
   items(),
   children()
@@ -92,7 +96,8 @@ void addTree(const size_t n, std::string* lines, std::string& filler, const size
   }
 }
 
-void printLine(std::vector<RenderData>& nodeStack, size_t linesPerItem) {
+void printLine(std::vector<RenderData>& nodeStack) {
+  const size_t linesPerItem = nodeStack[0].getLinesPerItem();
   std::string* lines = new std::string[linesPerItem];
   std::string filler;
   bool outputFiller = false;
@@ -198,7 +203,7 @@ RenderData renderNode(const ProductionNode& node) {
 
 void addAndPrint(ProductionNode& node, std::vector<RenderData>& nodeStack) {
   if(node.children.size() == 0) {
-    printLine(nodeStack, 4);
+    printLine(nodeStack);
   } else {
     for (size_t i = 0; i < node.children.size(); ++i) {
       nodeStack.push_back(renderNode(node.children[i]));
@@ -206,7 +211,7 @@ void addAndPrint(ProductionNode& node, std::vector<RenderData>& nodeStack) {
 
       // print the remaining lines
       while(nodeStack.back().itemsPlotted < nodeStack.back().items) {
-        printLine(nodeStack, 4);
+        printLine(nodeStack);
       }
       nodeStack.pop_back();
 
@@ -222,14 +227,15 @@ void ProductionNode::printTree() {
   addAndPrint(*this, nodeStack);
   // print the remaining lines
   while(nodeStack.back().itemsPlotted < nodeStack.back().items) {
-    printLine(nodeStack, 4);
+    printLine(nodeStack);
   }
 }
 
 void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t maxSize) {
 
-  const size_t n = 4;
-  std::string lines[n];
+  RenderData tempData = renderNode(nodes[0]);
+  const size_t linesPerItem = tempData.getLinesPerItem();
+  std::string* lines = new std::string[linesPerItem];
   std::string filler;
 
   bool firstOut = true;
@@ -239,10 +245,10 @@ void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t 
 
     for(size_t item = 0; item < data.items; ++item) {
       if(0 != pos) {
-        addTree(n, lines, filler, 0, empty);
+        addTree(linesPerItem, lines, filler, 0, empty);
       }
 
-      addToLines(n, lines, filler, &data.lines[item * 4], data.maxSize);
+      addToLines(linesPerItem, lines, filler, &data.lines[item * linesPerItem], data.maxSize);
 
       pos += 1;
       if(pos >= maxSize) {
@@ -251,8 +257,8 @@ void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t 
         } else {
           firstOut = false;
         }
-        outputLines(lines, n);
-        clearLines(lines, n);
+        outputLines(lines, linesPerItem);
+        clearLines(lines, linesPerItem);
         pos = 0;
       }
     }
@@ -262,8 +268,10 @@ void ProductionNode::printList(const std::vector<ProductionNode> &nodes, size_t 
     if(!firstOut) {
       std::cout << std::endl;
     }
-    outputLines(lines, n);
+    outputLines(lines, linesPerItem);
   }
+
+  delete [] lines;
 }
 
 void ProductionNode::clearLines(std::string *lines, const size_t n) {
