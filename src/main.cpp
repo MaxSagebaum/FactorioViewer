@@ -50,6 +50,18 @@ struct Recipe {
       this->results.push_back(part);
     }
   }
+
+  double normalizeAmount(const string& item, const double& amount) const {
+    double amountNormalized = amount;
+
+    for(const Part& part : results) {
+      if(0 == part.name.compare(item)) {
+        amountNormalized /= part.quantity;
+      }
+    }
+
+    return amountNormalized;
+  }
 };
 
 void report_errors(lua_State *L, int status) {
@@ -285,16 +297,25 @@ bool isTotalIngredient(const std::string& name, const Settings& settings) {
   return false;
 }
 
-void addItem(const Recipe &recipe, double amount, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings) {
+/**
+ *
+ * @param recipe
+ * @param amountNormalized  The normalized amount how often the recipe should produce one imaginary quantity.
+ *                          The real quantities are then compute from the amount af unites each passthrough computes.
+ * @param node
+ * @param totals
+ * @param settings
+ */
+void addItem(const Recipe &recipe, double amountNormalized, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings) {
 
   for(size_t i = 0; i < recipe.results.size(); ++i) {
-    double fabs = recipe.time * amount / (60.0 * recipe.results[i].quantity * settings.speed);
-    double units = recipe.results[i].quantity * amount;
+    double fabs = recipe.time * amountNormalized / (60.0 * settings.speed);
+    double units = recipe.results[i].quantity * amountNormalized;
     node.addItem(ItemData(recipe.results[i].name, units, fabs));
 
     if(settings.totalAll ||
        isTotalIngredient(recipe.results[i].name, settings)) {
-      totals[recipe.results[i].name] += amount;
+      totals[recipe.results[i].name] += units;
     }
   }
 }
@@ -310,24 +331,27 @@ void addItem(const std::string &name, double amount, ProductionNode &node, std::
 
 }
 
-ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amount, std::map<std::string,double>& totals, const Settings& settings) {
+ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amountNormalized, std::map<std::string,double>& totals, const Settings& settings) {
   ProductionNode node;
 
-  addItem(recipe, amount, node, totals, settings);
+  addItem(recipe, amountNormalized, node, totals, settings);
 
   for(const Part& part : recipe.parts) {
 
     if(targetToRecipe.find(part.name) != targetToRecipe.end()) {
+
+      const Recipe& partRecipe = *targetToRecipe.at(part.name);
       if(!isBaseIngredient(part.name, settings)) {
-        node.addChild(outputYield(targetToRecipe, *targetToRecipe.at(part.name), amount * part.quantity, totals, settings));
+        double partAmountNormalized = partRecipe.normalizeAmount(part.name, amountNormalized * part.quantity);
+        node.addChild(outputYield(targetToRecipe, partRecipe, partAmountNormalized, totals, settings));
       } else {
         ProductionNode child;
-        addItem(*targetToRecipe.at(part.name), amount * part.quantity, child, totals, settings);
+        addItem(partRecipe, amountNormalized * part.quantity, child, totals, settings);
         node.addChild(child);
       }
     } else {
       ProductionNode child;
-      addItem(part.name, amount * part.quantity, child, totals, settings);
+      addItem(part.name, amountNormalized * part.quantity, child, totals, settings);
       node.addChild(child);
     }
   }
@@ -433,7 +457,10 @@ int main(int nargs, const char **args) {
           units = settings.units[i];
         }
         if (recipes.find(settings.recipes[i]) != recipes.end()) {
-          ProductionNode node = outputYield(targetToRecipe, recipes[settings.recipes[i]], units, totals, settings);
+          const Recipe& curRecipe = recipes[settings.recipes[i]];
+          double unitsNormalized = curRecipe.normalizeAmount(settings.recipes[i], units);
+
+          ProductionNode node = outputYield(targetToRecipe, curRecipe, unitsNormalized, totals, settings);
           nodes.push_back(node);
         } else {
           std::cerr << "Could not find a recipe for: " << settings.recipes[i] << std::endl;
