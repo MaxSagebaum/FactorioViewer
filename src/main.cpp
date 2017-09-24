@@ -34,13 +34,15 @@ struct Recipe {
   std::vector<Part> results;
   double time;
   double yield;
+  double fabSpeed;
 
   Recipe() :
       name(),
       creates(),
       parts(),
       time(0.5),
-      yield(1) {}
+      yield(1),
+      fabSpeed(1.0) {}
 
   void finish() {
     if(0 == this->results.size()) {
@@ -177,6 +179,25 @@ void readParts(std::vector<Part>& parts, lua_State *L) {
   }
 }
 
+double lookupFabSpeed(const Settings& settings, const string& category) {
+  if(0 == category.compare("chemistry")) {
+    return settings.chemicalSpeed;
+  } else if(0 == category.compare("smelting")) {
+    return settings.furnanceSpeed;
+  } else if(0 == category.compare("oil-processing")) {
+    return settings.oilSpeed;
+  } else if(0 == category.compare("crafting") || 0 == category.compare("advanced-crafting") || 0 == category.compare("crafting-with-fluid")) {
+    return settings.factorySpeed;
+  } else if(0 == category.compare("rocket-building")) {
+    return settings.rocketSpeed;
+  } else if(0 == category.compare("centrifuging")) {
+    return settings.centriSpeed;
+  } else {
+    std::cerr << "No know category '" << category << "' using factory speed." << std::endl;
+    return settings.factorySpeed;
+  }
+}
+
 void readRecipe(Recipe& recipe, lua_State *L, const Settings& settings) {
   if (0 == lua_istable(L, -1)) {
     std::cerr << "Expecting table as value" << std::endl;
@@ -185,6 +206,9 @@ void readRecipe(Recipe& recipe, lua_State *L, const Settings& settings) {
 
   lua_pushnil(L);
 
+  // set the default values
+  recipe.fabSpeed = settings.factorySpeed;
+
   while (lua_next(L, -2) != 0) {
     if (0 == lua_isstring(L, -2)) {
       std::cerr << "Expecting string as key" << std::endl;
@@ -192,7 +216,7 @@ void readRecipe(Recipe& recipe, lua_State *L, const Settings& settings) {
     }
     std::string key = getString(L, -2);
 
-    if(0 == key.compare("enabled") || 0 == key.compare("type") || 0 == key.compare("category") || 0 == key.compare("hidden") || 0 == key.compare("order") || 0 == key.compare("icon")|| 0 == key.compare("subgroup") || 0 == key.compare("requester_paste_multiplier")) {
+    if(0 == key.compare("enabled") || 0 == key.compare("type") || 0 == key.compare("hidden") || 0 == key.compare("order") || 0 == key.compare("icon")|| 0 == key.compare("subgroup") || 0 == key.compare("requester_paste_multiplier")) {
       // ignore
     } else if(0 == key.compare("name")) {
       recipe.name = getString(L, -1);
@@ -206,6 +230,8 @@ void readRecipe(Recipe& recipe, lua_State *L, const Settings& settings) {
       readParts(recipe.parts, L);
     } else if(0 == key.compare("results")) {
       readParts(recipe.results, L);
+    } else if(0 == key.compare("category")) {
+      recipe.fabSpeed = lookupFabSpeed(settings, getString(L, -1));
     } else if(0 == key.compare("normal")) {
       if(!settings.useExpensive) {
         readRecipe(recipe, L, settings);
@@ -309,7 +335,7 @@ bool isTotalIngredient(const std::string& name, const Settings& settings) {
 void addItem(const Recipe &recipe, double amountNormalized, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings) {
 
   for(size_t i = 0; i < recipe.results.size(); ++i) {
-    double fabs = recipe.time * amountNormalized / (60.0 * settings.speed);
+    double fabs = recipe.time * amountNormalized / (60.0 * recipe.fabSpeed);
     double units = recipe.results[i].quantity * amountNormalized;
     node.addItem(ItemData(recipe.results[i].name, units, fabs));
 

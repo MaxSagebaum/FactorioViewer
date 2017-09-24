@@ -19,7 +19,12 @@ struct Settings {
   std::vector<std::string> readDirectories;
   std::vector<std::string> recipes;
   std::vector<double> units;
-  double speed;
+  double factorySpeed;
+  double chemicalSpeed;
+  double furnanceSpeed;
+  double oilSpeed;
+  double rocketSpeed;
+  double centriSpeed;
   bool dotOutput;
   bool unifyDot;
   bool totalAll;

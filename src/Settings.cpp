@@ -90,7 +90,12 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
 
     TCLAP::SwitchArg dotOutputArg("d", "dot", "Switch on the dot graph formatting instead of the ascii formatting.", cmd, false);
     TCLAP::SwitchArg dotGatherArg("g", "dotGather", "Gather the units when dot formatting is enabled.", cmd, false);
-    TCLAP::ValueArg<double> speedArg("s", "speed", "The construction speed multiplier for the fabrication. [Default: 1.0]  E.g.: Assembling Machine 1 = 0.5, Assembling Machine 2 = 0.75, Assembling Machine 3 = 1.25", false, 1.0, "speed factor", cmd);
+    TCLAP::ValueArg<double> factorySpeedArg("s", "sSpeed", "The construction speed multiplier for the factory fabrication. [Default: 1.0]  E.g.: Assembling Machine 1 = 0.5, Assembling Machine 2 = 0.75, Assembling Machine 3 = 1.25", false, 1.0, "factory speed factor", cmd);
+    TCLAP::ValueArg<double> chemicalSpeedArg("c", "cSpeed", "The construction speed multiplier for the chemical fabrication. [Default: 1.25]  E.g.: Chemical plant = 1.25", false, 1.25, "chemical speed factor", cmd);
+    TCLAP::ValueArg<double> furnaceSpeedArg("f", "fSpeed", "The construction speed multiplier for the furnace fabrication. [Default: 2.0]  E.g.: Stone furnace = 1.0, Steel furnace = 2.0, Electric furnace = 2.0", false, 2.0, "furnace speed factor", cmd);
+    TCLAP::ValueArg<double> oilSpeedArg("", "oSpeed", "The construction speed multiplier for the oil fabrication. [Default: 1.0]  E.g.: Oil refinery = 1.0", false, 1.0, "oil speed factor", cmd);
+    TCLAP::ValueArg<double> rocketSpeedArg("", "rSpeed", "The construction speed multiplier for the rocket fabrication. [Default: 1.0]  E.g.: Rocket silo = 1.0", false, 1.0, "rocket speed factor", cmd);
+    TCLAP::ValueArg<double> centriSpeedArg("", "centriSpeed", "The construction speed multiplier for the centrifugal fabrication. [Default: 0.75]  E.g.: Centrifuge = 0.75", false, 0.75, "centrifuge speed factor", cmd);
     TCLAP::MultiArg<double> unitsArg("u", "units", "The number of units that the recipe should produce per minute. For each recipe a separate amount can be specified. The last unit is used for the remaining recipes. [Default: 1.0]", false, "Units per minute", cmd);
     TCLAP::UnlabeledMultiArg<std::string> recipesArg("recipe", "The recipes for which the ingredients are displayed. The name can either be the internal Factorio name or the natural language description.", true, "recipe");
 
@@ -124,7 +129,12 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     if(0 == units.size()) {
       units.push_back(1.0);
     }
-    speed = speedArg.getValue();
+    factorySpeed = factorySpeedArg.getValue();
+    chemicalSpeed = chemicalSpeedArg.getValue();
+    furnanceSpeed = furnaceSpeedArg.getValue();
+    oilSpeed = oilSpeedArg.getValue();
+    rocketSpeed = rocketSpeedArg.getValue();
+    centriSpeed = centriSpeedArg.getValue();
 
     std::vector<std::string> addionalDirs = dirArg.getValue();
     for (auto&& item : addionalDirs) {
