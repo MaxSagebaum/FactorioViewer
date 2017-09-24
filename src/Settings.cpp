@@ -97,6 +97,9 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     TCLAP::ValueArg<double> rocketSpeedArg("", "rSpeed", "The construction speed multiplier for the rocket fabrication. [Default: 1.0]  E.g.: Rocket silo = 1.0", false, 1.0, "rocket speed factor", cmd);
     TCLAP::ValueArg<double> centriSpeedArg("", "centriSpeed", "The construction speed multiplier for the centrifugal fabrication. [Default: 0.75]  E.g.: Centrifuge = 0.75", false, 0.75, "centrifuge speed factor", cmd);
     TCLAP::MultiArg<double> unitsArg("u", "units", "The number of units that the recipe should produce per minute. For each recipe a separate amount can be specified. The last unit is used for the remaining recipes. [Default: 1.0]", false, "Units per minute", cmd);
+
+    TCLAP::ValueArg<std::string> oilRecipeArg("", "oilRecipe", "The recipe for oil processing. [Default: advanced-oil-processing]  E.g.: basic-oil-processing, advanced-oil-processing, coal-liquefaction", false, "advanced-oil-processing", "oil recipe", cmd);
+
     TCLAP::UnlabeledMultiArg<std::string> recipesArg("recipe", "The recipes for which the ingredients are displayed. The name can either be the internal Factorio name or the natural language description.", true, "recipe");
 
     TCLAP::MultiArg<std::string> dirArg("", "dir", "A directory that is searched for lua files and these files are then parsed for recipes. "
@@ -135,6 +138,8 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     oilSpeed = oilSpeedArg.getValue();
     rocketSpeed = rocketSpeedArg.getValue();
     centriSpeed = centriSpeedArg.getValue();
+
+    oilRecipe = oilRecipeArg.getValue();
 
     std::vector<std::string> addionalDirs = dirArg.getValue();
     for (auto&& item : addionalDirs) {
@@ -183,9 +188,6 @@ bool Settings::parseCommandLine(int nargs, const char **args) {
     baseComponents.push_back("copper-ore");
     baseComponents.push_back("iron-plate");
     baseComponents.push_back("copper-plate");
-    baseComponents.push_back("heavy-oil");
-    baseComponents.push_back("light-oil");
-    baseComponents.push_back("petroleum-gas");
     baseComponents.push_back("water");
     baseComponents.push_back("coal");
     baseComponents.push_back("alien-artifact");

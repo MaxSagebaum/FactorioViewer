@@ -430,6 +430,44 @@ void buildTargetToRecipeLookup(const std::map<std::string, Recipe>& recipes, std
   }
 }
 
+bool setSpecifiedRecipes(const std::map<std::string, Recipe>& recipes, std::map<std::string, const Recipe*>& targetToRecipe, const Settings& settings) {
+  bool valid = true;
+  if(recipes.find(settings.oilRecipe) != recipes.end()) {
+    const Recipe& recipe = recipes.find(settings.oilRecipe)->second;
+
+    bool heavyOil = false;
+    bool lightOil = false;
+    bool petGas = false;
+    // now check if the recipe produces all three oil types
+    for(const Part& part : recipe.results) {
+      if(0 == part.name.compare("heavy-oil")) {
+        heavyOil = true;
+      } else if(0 == part.name.compare("light-oil")) {
+        lightOil = true;
+      } else if(0 == part.name.compare("petroleum-gas")) {
+        petGas = true;
+      }
+    }
+
+    if(heavyOil && lightOil && petGas) {
+
+      // Add all the targets might be more than the three oil types.
+      for(const Part& part : recipe.results) {
+        targetToRecipe[part.name] = &recipe;
+      }
+    } else {
+      valid = false;
+      std::cerr << "Error: The oil recipe '" << settings.oilRecipe << "' does not produce heavy oil, light oil and petroleum gas." << std::endl;
+    }
+  } else {
+    valid = false;
+
+    std::cerr << "Error: Could not find the oil recipe '" << settings.oilRecipe << "'." << std::endl;
+  }
+
+  return valid;
+}
+
 int main(int nargs, const char **args) {
 
   Settings settings;
@@ -471,6 +509,9 @@ int main(int nargs, const char **args) {
 
       std::map<std::string, const Recipe *> targetToRecipe;
       buildTargetToRecipeLookup(recipes, targetToRecipe);
+      if(!setSpecifiedRecipes(recipes, targetToRecipe, settings)) {
+        return -1;
+      }
 
       //std::cout << "Recipes: " << recipes.size() << std::endl;
 

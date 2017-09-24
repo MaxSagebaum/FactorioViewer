@@ -19,6 +19,9 @@ struct Settings {
   std::vector<std::string> readDirectories;
   std::vector<std::string> recipes;
   std::vector<double> units;
+
+  std::string oilRecipe;
+
   double factorySpeed;
   double chemicalSpeed;
   double furnanceSpeed;
