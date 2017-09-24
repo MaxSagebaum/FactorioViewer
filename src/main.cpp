@@ -332,16 +332,19 @@ bool isTotalIngredient(const std::string& name, const Settings& settings) {
  * @param totals
  * @param settings
  */
-void addItem(const Recipe &recipe, double amountNormalized, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings) {
+void addItem(const Recipe &recipe, double amountNormalized, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings, const std::string& target) {
 
-  for(size_t i = 0; i < recipe.results.size(); ++i) {
-    double fabs = recipe.time * amountNormalized / (60.0 * recipe.fabSpeed);
-    double units = recipe.results[i].quantity * amountNormalized;
-    node.addItem(ItemData(recipe.results[i].name, units, fabs));
+  for(const Part& result : recipe.results) {
 
-    if(settings.totalAll ||
-       isTotalIngredient(recipe.results[i].name, settings)) {
-      totals[recipe.results[i].name] += units;
+    if(target.empty() || 0 == target.compare(result.name)) {
+      double fabs = recipe.time * amountNormalized / (60.0 * recipe.fabSpeed);
+      double units = result.quantity * amountNormalized;
+      node.addItem(ItemData(result.name, units, fabs));
+
+      if(settings.totalAll ||
+         isTotalIngredient(result.name, settings)) {
+        totals[result.name] += units;
+      }
     }
   }
 }
@@ -357,10 +360,10 @@ void addItem(const std::string &name, double amount, ProductionNode &node, std::
 
 }
 
-ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amountNormalized, std::map<std::string,double>& totals, const Settings& settings) {
+ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amountNormalized, std::map<std::string,double>& totals, const Settings& settings, const std::string& target) {
   ProductionNode node;
 
-  addItem(recipe, amountNormalized, node, totals, settings);
+  addItem(recipe, amountNormalized, node, totals, settings, target);
 
   for(const Part& part : recipe.parts) {
 
@@ -369,10 +372,10 @@ ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToR
       const Recipe& partRecipe = *targetToRecipe.at(part.name);
       if(!isBaseIngredient(part.name, settings)) {
         double partAmountNormalized = partRecipe.normalizeAmount(part.name, amountNormalized * part.quantity);
-        node.addChild(outputYield(targetToRecipe, partRecipe, partAmountNormalized, totals, settings));
+        node.addChild(outputYield(targetToRecipe, partRecipe, partAmountNormalized, totals, settings, part.name));
       } else {
         ProductionNode child;
-        addItem(partRecipe, amountNormalized * part.quantity, child, totals, settings);
+        addItem(partRecipe, amountNormalized * part.quantity, child, totals, settings, part.name);
         node.addChild(child);
       }
     } else {
@@ -392,7 +395,8 @@ std::vector<ProductionNode> outputTotals(const std::map<std::string, const Recip
   int pos = 0;
   for ( auto iter = totals.begin(); iter != totals.end(); iter++) {
     if(targetToRecipe.find(iter->first) != targetToRecipe.end()) {
-      addItem(*targetToRecipe.at(iter->first), iter->second, vector[pos], temp, settings);
+      const Recipe& recipe = *targetToRecipe.at(iter->first);
+      addItem(recipe, recipe.normalizeAmount(iter->first, iter->second), vector[pos], temp, settings, iter->first);
     } else {
       addItem(iter->first, iter->second, vector[pos], temp, settings);
     }
@@ -523,14 +527,16 @@ int main(int nargs, const char **args) {
         if (i < settings.units.size()) {
           units = settings.units[i];
         }
-        if (recipes.find(settings.recipes[i]) != recipes.end()) {
-          const Recipe& curRecipe = recipes[settings.recipes[i]];
+        if (targetToRecipe.find(settings.recipes[i]) != targetToRecipe.end()) {
+          const Recipe& curRecipe = *targetToRecipe[settings.recipes[i]];
           double unitsNormalized = curRecipe.normalizeAmount(settings.recipes[i], units);
 
-          ProductionNode node = outputYield(targetToRecipe, curRecipe, unitsNormalized, totals, settings);
+          ProductionNode node = outputYield(targetToRecipe, curRecipe, unitsNormalized, totals, settings, "");
           nodes.push_back(node);
         } else {
           std::cerr << "Could not find a recipe for: " << settings.recipes[i] << std::endl;
+
+          return -1;
         }
       }
       std::vector<ProductionNode> totalNodes = outputTotals(targetToRecipe, totals, settings);
