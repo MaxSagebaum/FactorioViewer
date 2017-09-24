@@ -7,12 +7,17 @@
 
 #include <vector>
 #include <string>
+#include <map>
+
+#include "factorio.h"
+#include "Settings.h"
 
 struct ItemData {
   std::string name;
   double units;
   double fabs;
   std::string picture;
+  std::string type;
 
   ItemData():
     name(""),
@@ -21,11 +26,12 @@ struct ItemData {
     picture("")
   {}
 
-  ItemData(const std::string& name, double units, double fabs):
+  ItemData(const std::string& name, double units, double fabs, const std::string& type):
     name(name),
     units(units),
     fabs(fabs),
-    picture("")
+    picture(""),
+    type(type)
   {}
 
   void add(const ItemData& other) {
@@ -52,6 +58,14 @@ struct ProductionNode {
   static void outputLines(const std::string *lines, size_t n);
 
   static void clearLines(std::string *lines, const size_t n);
+};
+
+struct TotalList {
+  typedef std::pair<double, Part> Data;
+  std::map<std::string, Data> items;
+
+  void add(const Part& part, double amount);
+  std::vector<ProductionNode> output(const std::map<std::string, const Recipe*>& targetToRecipe, const Settings& settings) const;
 };
 
 struct RenderData {

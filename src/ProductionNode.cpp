@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <util.hpp>
+#include <Settings.h>
+#include <main.h>
 #include "ProductionNode.h"
 
 const std::string empty = "       ";
@@ -195,7 +197,11 @@ RenderData renderNode(const ProductionNode& node) {
     } else {
       data.addLine(format("%8.3f fabs", item.fabs));
     }
-    data.addLine(format("%8.3f belts", item.units / (60.0 * 13.33)));
+    if(0 == item.type.compare("fluid")) {
+      data.addLine(format("%8.3f pipes", 1.0));
+    } else if(0 == item.type.compare("item")) {
+      data.addLine(format("%8.3f belts", item.units / (60.0 * 13.33)));
+    }
   }
 
   return data;
@@ -286,5 +292,34 @@ void ProductionNode::outputLines(const std::string *lines, size_t n) {
   }
 }
 
+void TotalList::add(const Part& part, double amount) {
+  TotalList::Data& data = items[part.name];
+
+  data.second = part;
+  data.first += amount;
+}
+
+std::vector<ProductionNode> TotalList::output(const std::map<std::string, const Recipe*>& targetToRecipe, const Settings& settings) const {
+  std::vector<ProductionNode> vector(items.size());
+
+  TotalList temp;
+
+  int pos = 0;
+  for ( auto iter = items.begin(); iter != items.end(); iter++) {
+
+    const Part& part = iter->second.second;
+    double amount = iter->second.first;
+
+    if(targetToRecipe.find(part.name) != targetToRecipe.end()) {
+      const Recipe& recipe = *targetToRecipe.at(part.name);
+      addItem(recipe, recipe.normalizeAmount(part.name, amount), vector[pos], temp, settings, part.name);
+    } else {
+      addItem(part, amount, vector[pos], temp, settings);
+    }
+    pos += 1;
+  }
+
+  return vector;
+}
 
 

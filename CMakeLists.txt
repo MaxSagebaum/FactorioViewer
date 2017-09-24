@@ -8,7 +8,7 @@ include_directories(include)
 include_directories(/usr/include/lua)
 include_directories(libs/tclap-1.2.1/include)
 
-set(SOURCE_FILES src/main.cpp src/ProductionNode.cpp include/ProductionNode.h include/util.hpp src/DotFormatter.cpp include/DotFormatter.h include/Settings.h src/Settings.cpp)
+set(SOURCE_FILES src/main.cpp src/ProductionNode.cpp include/ProductionNode.h include/util.hpp src/DotFormatter.cpp include/DotFormatter.h include/Settings.h src/Settings.cpp include/factorio.h include/main.h)
 add_executable(FactorioViewer ${SOURCE_FILES})
 
 IF (LUA_FOUND)

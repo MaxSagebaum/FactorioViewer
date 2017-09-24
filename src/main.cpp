@@ -1,11 +1,12 @@
 #include <iostream>
-#include <sstream>
-
-#include<lua.hpp>
-#include <vector>
 #include <map>
+#include <vector>
+
+#include <sstream>
+#include <lua.hpp>
 #include <ProductionNode.h>
 #include <util.hpp>
+#include <factorio.h>
 #include <DotFormatter.h>
 #include <Settings.h>
 #include <dirent.h>
@@ -15,56 +16,6 @@ using namespace std;
 const char* luaFile =
 #include "../lua/extend.lua"
 ;
-
-struct Part {
-  std::string name;
-  double quantity;
-  std::string type;
-
-  Part() :
-      name(),
-      quantity(0),
-      type("item") {}
-};
-
-struct Recipe {
-  std::string name;
-  std::string creates;
-  std::vector<Part> parts;
-  std::vector<Part> results;
-  double time;
-  double yield;
-  double fabSpeed;
-
-  Recipe() :
-      name(),
-      creates(),
-      parts(),
-      time(0.5),
-      yield(1),
-      fabSpeed(1.0) {}
-
-  void finish() {
-    if(0 == this->results.size()) {
-      Part part;
-      part.name = this->creates;
-      part.quantity = this->yield;
-      this->results.push_back(part);
-    }
-  }
-
-  double normalizeAmount(const string& item, const double& amount) const {
-    double amountNormalized = amount;
-
-    for(const Part& part : results) {
-      if(0 == part.name.compare(item)) {
-        amountNormalized /= part.quantity;
-      }
-    }
-
-    return amountNormalized;
-  }
-};
 
 void report_errors(lua_State *L, int status) {
   if (status != 0) {
@@ -332,35 +283,35 @@ bool isTotalIngredient(const std::string& name, const Settings& settings) {
  * @param totals
  * @param settings
  */
-void addItem(const Recipe &recipe, double amountNormalized, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings, const std::string& target) {
+void addItem(const Recipe &recipe, double amountNormalized, ProductionNode &node, TotalList& totals, const Settings& settings, const std::string& target) {
 
   for(const Part& result : recipe.results) {
 
     if(target.empty() || 0 == target.compare(result.name)) {
       double fabs = recipe.time * amountNormalized / (60.0 * recipe.fabSpeed);
       double units = result.quantity * amountNormalized;
-      node.addItem(ItemData(result.name, units, fabs));
+      node.addItem(ItemData(result.name, units, fabs, result.type));
 
       if(settings.totalAll ||
          isTotalIngredient(result.name, settings)) {
-        totals[result.name] += units;
+        totals.add(result, units);
       }
     }
   }
 }
 
-void addItem(const std::string &name, double amount, ProductionNode &node, std::map<std::string,double>& totals, const Settings& settings) {
+void addItem(const Part &part, double amount, ProductionNode &node, TotalList& totals, const Settings& settings) {
   double units = amount;
-  node.addItem(ItemData(name, units, -1.0));
+  node.addItem(ItemData(part.name, units, -1.0, part.type));
 
   if(settings.totalAll ||
-     isTotalIngredient(name, settings)) {
-    totals[name] += amount;
+     isTotalIngredient(part.name, settings)) {
+    totals.add(part, amount);
   }
 
 }
 
-ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amountNormalized, std::map<std::string,double>& totals, const Settings& settings, const std::string& target) {
+ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToRecipe, const Recipe& recipe, double amountNormalized, TotalList& totals, const Settings& settings, const std::string& target) {
   ProductionNode node;
 
   addItem(recipe, amountNormalized, node, totals, settings, target);
@@ -368,8 +319,8 @@ ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToR
   for(const Part& part : recipe.parts) {
 
     if(targetToRecipe.find(part.name) != targetToRecipe.end()) {
-
       const Recipe& partRecipe = *targetToRecipe.at(part.name);
+
       if(!isBaseIngredient(part.name, settings)) {
         double partAmountNormalized = partRecipe.normalizeAmount(part.name, amountNormalized * part.quantity);
         node.addChild(outputYield(targetToRecipe, partRecipe, partAmountNormalized, totals, settings, part.name));
@@ -380,30 +331,12 @@ ProductionNode outputYield(const std::map<std::string, const Recipe*>& targetToR
       }
     } else {
       ProductionNode child;
-      addItem(part.name, amountNormalized * part.quantity, child, totals, settings);
+      addItem(part, amountNormalized * part.quantity, child, totals, settings);
       node.addChild(child);
     }
   }
 
   return node;
-}
-
-std::vector<ProductionNode> outputTotals(const std::map<std::string, const Recipe*>& targetToRecipe, const std::map<std::string, double>& totals, const Settings& settings) {
-  std::vector<ProductionNode> vector(totals.size());
-  std::map<std::string,double> temp;
-
-  int pos = 0;
-  for ( auto iter = totals.begin(); iter != totals.end(); iter++) {
-    if(targetToRecipe.find(iter->first) != targetToRecipe.end()) {
-      const Recipe& recipe = *targetToRecipe.at(iter->first);
-      addItem(recipe, recipe.normalizeAmount(iter->first, iter->second), vector[pos], temp, settings, iter->first);
-    } else {
-      addItem(iter->first, iter->second, vector[pos], temp, settings);
-    }
-    pos += 1;
-  }
-
-  return vector;
 }
 
 void listLuaFiles(const std::string& directory, std::vector<std::string>& files) {
@@ -519,7 +452,7 @@ int main(int nargs, const char **args) {
 
       //std::cout << "Recipes: " << recipes.size() << std::endl;
 
-      std::map<std::string, double> totals;
+      TotalList totals;
 
       std::vector<ProductionNode> nodes;
       for (size_t i = 0; i < settings.recipes.size(); ++i) {
@@ -539,7 +472,7 @@ int main(int nargs, const char **args) {
           return -1;
         }
       }
-      std::vector<ProductionNode> totalNodes = outputTotals(targetToRecipe, totals, settings);
+      std::vector<ProductionNode> totalNodes = totals.output(targetToRecipe, settings);
 
 
       if (settings.dotOutput) {
